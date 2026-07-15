@@ -1,0 +1,105 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f7fa',
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
+    paddingHorizontal: 20,
+    marginTop: 15,
+    textTransform: 'uppercase',
+  },
+  checkoutBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderTopWidth: 1,
+    borderColor: '#e0e0e0',
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: '#7f8c8d',
+  },
+  totalAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c2c4d',
+  },
+  checkoutButton: {
+    backgroundColor: '#2c2c4d',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+  },
+  checkoutButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    width: '85%',
+    borderRadius: 15,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#2c2c4d',
+    textAlign: 'center',
+  },
+  icon: {
+    width: 20,
+    height: 20,
+    tintColor: '#a0a0a0',
+    marginRight: 10,
+  },
+  customerRow: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  customerPhone: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 4,
+  },
+  cancelButton: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#e74c3c',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});

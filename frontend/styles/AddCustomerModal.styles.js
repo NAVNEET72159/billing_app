@@ -1,0 +1,79 @@
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
+    container: { 
+        flex: 1, 
+        backgroundColor: '#f5f5f5', 
+        paddingTop: 50 
+    },
+    headerTitle: { 
+        fontSize: 28, 
+        fontWeight: 'bold', 
+        color: '#000', 
+        paddingHorizontal: 20, 
+        marginBottom: 15 
+    },
+    scrollContent: { 
+        paddingHorizontal: 20, 
+        paddingBottom: 40 
+    },    
+    staticText: { 
+        fontSize: 14, 
+        color: '#333', 
+        marginBottom: 20, 
+        marginLeft: 5 
+    },
+    label: { 
+        fontSize: 14, 
+        color: '#000', 
+        marginLeft: 10, 
+        marginBottom: 5 
+    },
+    input: { 
+        backgroundColor: '#c4c0b3', 
+        borderRadius: 25, 
+        paddingHorizontal: 15, 
+        paddingVertical: 12, 
+        marginBottom: 15, 
+        fontSize: 16, 
+        color: '#000' 
+    },
+    row: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between' 
+    },
+    codeColumn: { 
+        width: '30%' 
+    },
+    phoneColumn: { 
+        width: '65%' 
+    },
+    buttonRow: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        marginTop: 10 
+    },
+    btn: { 
+        flex: 1, 
+        paddingVertical: 15, 
+        borderRadius: 25, 
+        alignItems: 'center', 
+        marginHorizontal: 5 
+    },
+    cancelBtn: { 
+        backgroundColor: '#e53935' 
+    }, // Red cancel
+    cancelBtnText: { 
+        color: '#fff', 
+        fontSize: 16, 
+        fontWeight: 'bold' 
+    },
+    submitBtn: { 
+        backgroundColor: '#7cb342' 
+    },
+    submitBtnText: { 
+        color: '#fff', 
+        fontSize: 16, 
+        fontWeight: 'bold' 
+    }
+});
