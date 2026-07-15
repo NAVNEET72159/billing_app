@@ -22,7 +22,7 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
         try {
             const token = await AsyncStorage.getItem('userToken');
             
-            await axios.post(`${API_URL}/customers`, formData, {
+            await axios.post(`${API_URL}/customer`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

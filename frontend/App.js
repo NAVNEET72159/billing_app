@@ -7,6 +7,7 @@ import DashboardScreen from './screens/dashboardScreen';
 import NewBillScreen from './screens/newBillScreen';
 import InventoryScreen from './screens/InventoryScreens';
 import CustomerScreen from './screens/CustomerScreen';
+import BarcodeGeneratorScreen from './screens/BarcodeGeneratorScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ export default function App() {
         <Stack.Screen name="NewBill" component={NewBillScreen} />
         <Stack.Screen name="Inventory" component={InventoryScreen} />
         <Stack.Screen name="Customers" component={CustomerScreen} />
+        <Stack.Screen name="Barcode" component={BarcodeGeneratorScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

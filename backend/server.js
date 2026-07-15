@@ -113,33 +113,80 @@ app.get('/items', verifyToken, (req, res) => {
 // 🧑‍🤝‍🧑 CUSTOMER ROUTE (Protected)
 // ==========================================
 // Registering a new customer
-app.post('/customers', verifyToken, (req, res) => {
-    const{
-        customer_name, country_code, phone_number, email, current_address, city, state, pincode
-    } = req.body;
+app.post('/customer', verifyToken, async (req, res) => {
+    const customer_name = req.body.customer_name || '';
+    const country_code = req.body.country_code || req.body.code || ''; 
+    const phone_number = req.body.phone_number || '';
+    const alternate_number = req.body.alternate_number || '';
+    const email = req.body.email || '';
+    const current_address = req.body.current_address || '';
+    const permanent_address = req.body.permanent_address || '';
+    const city = req.body.city || '';
+    const state = req.body.state || '';
+    const pincode = req.body.pincode || '';
 
-    const query = 'INSERT INTO CUSTOMERS (customer_name, country_code, phone_number, email, current_address, city, state, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    try {
+        const query = 'INSERT INTO CUSTOMER (customer_name, country_code, phone_number, alternate_number, email, current_address, permanent_address, city, state, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const values = [customer_name, country_code, phone_number, alternate_number, email, current_address, permanent_address, city, state, pincode];
+        const [result] = await db.promise().query(query, values);
 
-    const values = [customer_name, country_code, phone_number, email, current_address, city, state, pincode];
-    db.query(query, values, (err, result) => {
-        if (err) {
-            if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ error: 'Customer with this phone number or email already exists.' });
-            }
-            return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json({ message: 'Customer registered successfully', customerId: result.insertId });
-    });
+        res.status(201).json({ 
+            message: "Customer added successfully!", 
+            insertId: result.insertId 
+        });
+    }catch (error) {
+        console.error("Database Insert Error:", error);
+        res.status(500).json({ error: "Failed to add customer to database" });
+    }
 });
 
-app.get('/customers', verifyToken, (req, res) => {
-    const query = 'SELECT customer_id, customer_name, phone_number, current_address FROM CUSTOMER ORDER BY customer_name ASC';
-    db.query(query, (err, results) => {
-        if(err) {
-            if (err) return res.status(500).json({ error: err.message });
+app.get('/customer', verifyToken, async (req, res) => {
+    try {
+        const query = 'SELECT * FROM CUSTOMER ORDER BY customer_name ASC';
+        const [rows] = await db.promise().query(query);
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("Fetch Customers Error:", error);
+        res.status(500).json({ error: "Failed to fetch customers from database" });
+    }
+});
+
+app.put('/customer/:id', async (req, res) => {
+    const customerId = req.params.id;
+    const customer_name = req.body.customer_name || '';
+    const country_code = req.body.country_code || req.body.code || ''; 
+    const phone_number = req.body.phone_number || '';
+    const alternate_number = req.body.alternate_number || '';
+    const email = req.body.email || '';
+    const current_address = req.body.current_address || '';
+    const permanent_address = req.body.permanent_address || '';
+    const city = req.body.city || '';
+    const state = req.body.state || '';
+    const pincode = req.body.pincode || '';
+
+    try {
+        const updateQuery = `
+            UPDATE customer 
+            SET customer_name = ?, country_code = ?, phone_number = ?, 
+                alternate_number = ?, email = ?, current_address = ?, 
+                permanent_address = ?, city = ?, state = ?, pincode = ?
+            WHERE customer_id = ?
+        `;
+        
+        const values = [
+            customer_name, country_code, phone_number, alternate_number, 
+            email, current_address, permanent_address, city, state, pincode, 
+            customerId
+        ];
+        const [result] = await db.promise().query(updateQuery, values);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "No customer found with that ID!" });
         }
-        res.json(results);
-    });
+        res.status(200).json({ message: "Customer updated successfully!" });
+    } catch (error) {
+        console.error("Database Update Error:", error);
+        res.status(500).json({ error: "Failed to update customer in database" });
+    }
 });
 
 // ==========================================
@@ -245,4 +292,112 @@ app.post('/checkout', verifyToken, (req, res) => {
             });
         });
     });
+});
+
+app.delete('/customers/:id', async (req, res) => {
+    const customerId = req.params.id;
+
+    try {
+        const deleteQuery = 'DELETE FROM customer WHERE customer_id = ?';
+        const [result] = await db.promise().query(deleteQuery, [customerId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "No customer found with that ID!" });
+        }
+
+        res.status(200).json({ message: "Customer deleted successfully!" });
+    } catch (error) {
+        console.error("Database Delete Error:", error);
+        res.status(500).json({ error: "Failed to delete customer from database" });
+    }
+});
+
+app.post('/items', async (req, res) => {
+    const barcode = req.body.barcode || '';
+    const item_name = req.body.item_name || '';
+    const item_group_id = req.body.item_group_name || '';
+    const gst_percentage = parseFloat(req.body.gst_percentage) || 0;
+    const mrp = parseFloat(req.body.mrp) || 0;
+    const purchase_rate = parseFloat(req.body.purchase_rate) || 0;
+    const sale_rate = parseFloat(req.body.sale_rate) || 0;
+    const stock = parseInt(req.body.stock) || 0;
+    const unit = req.body.unit || '';
+
+    try {
+        const insertQuery = `
+            INSERT INTO item 
+            (barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            barcode, item_name, item_group_id, gst_percentage, 
+            mrp, purchase_rate, sale_rate, stock, unit
+        ];
+        const [result] = await db.promise().query(insertQuery, values);
+
+        res.status(201).json({ 
+            message: "Item added successfully!", 
+            insertId: result.insertId 
+        });
+        
+    } catch (error) {
+        console.error("Database Insert Item Error:", error);
+        res.status(500).json({ error: "Failed to add item to database" });
+    }
+});
+
+app.delete('/items/:id', async (req, res) => {
+    const itemId = req.params.id;
+
+    try {
+        const deleteQuery = 'DELETE FROM item WHERE item_id = ?';
+        const [result] = await db.promise().query(deleteQuery, [itemId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "No item found with that ID!" });
+        }
+
+        res.status(200).json({ message: "Item deleted successfully!" });
+    } catch (error) {
+        console.error("Database Delete Error:", error);
+        res.status(500).json({ error: "Failed to delete item from database" });
+    }
+});
+
+app.put('/items/:id', async (req, res) => {
+    const itemId = req.params.id;
+    
+    const barcode = req.body.barcode || '';
+    const item_name = req.body.item_name || '';
+    const item_group_id = req.body.item_group_id || '';
+    const gst_percentage = parseFloat(req.body.gst_percentage) || 0;
+    const mrp = parseFloat(req.body.mrp) || 0;
+    const purchase_rate = parseFloat(req.body.purchase_rate) || 0;
+    const sale_rate = parseFloat(req.body.sale_rate) || 0;
+    const stock = parseInt(req.body.stock) || 0;
+    const unit = req.body.unit || '';
+
+    try {
+        const updateQuery = `
+            UPDATE items 
+            SET barcode = ?, item_name = ?, item_group_id = ?, 
+                gst_percentage = ?, mrp = ?, purchase_rate = ?, 
+                sale_rate = ?, stock = ?, unit = ?
+            WHERE item_id = ?
+        `;
+        
+        const values = [
+            barcode, item_name, item_group_id, gst_percentage, 
+            mrp, purchase_rate, sale_rate, stock, unit, itemId
+        ];
+
+        const [result] = await db.promise().query(updateQuery, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "No item found with that ID!" });
+        }
+
+        res.status(200).json({ message: "Item updated successfully!" });
+    } catch (error) {
+        console.error("Database Update Item Error:", error);
+        res.status(500).json({ error: "Failed to update item in database" });
+    }
 });

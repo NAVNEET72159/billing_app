@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert, Acti
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../config/api';
-import styles from '../styles/UpdateCustomerModal.styles'
+import { styles } from '../styles/UpdateCustomerModal.styles'
 
 export default function UpdateCustomerModal({ visible, customer, onClose, onUpdateSuccess }) {
     const [formData, setFormData] = useState({});
@@ -12,7 +12,7 @@ export default function UpdateCustomerModal({ visible, customer, onClose, onUpda
         if (customer) {
             setFormData({
                 customer_name: customer.customer_name || '',
-                code: customer.code || '',
+                code: customer.country_code || '',
                 phone_number: customer.phone_number || '',
                 alternate_number: customer.alternate_number || '',
                 email: customer.email || '',
@@ -22,6 +22,7 @@ export default function UpdateCustomerModal({ visible, customer, onClose, onUpda
                 state: customer.state || '',
                 pincode: customer.pincode ? String(customer.pincode) : ''
             });
+            console.log("Customer data received from backend:", customer);
         }
     }, [customer]);
     const handleSave = async () => {
@@ -33,8 +34,10 @@ export default function UpdateCustomerModal({ visible, customer, onClose, onUpda
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
+
+            console.log("SENDING TO URL:", `${API_URL}/customer/${customer.customer_id}`);
             
-            await axios.put(`${API_URL}/customers/${customer.customer_id}`, formData, {
+            await axios.put(`${API_URL}/customer/${customer.customer_id}`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
