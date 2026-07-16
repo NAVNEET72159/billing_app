@@ -25,7 +25,7 @@ export default function CustomerScreen({ navigation }) {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const response = await axios.get(`${API_URL}/customer`, {
+            const response = await axios.get(`${API_URL}/customers`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setCustomers(response.data);

@@ -18,7 +18,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                 mrp: item.mrp ? String(item.mrp) : '',
                 purchase_rate: item.purchase_rate ? String(item.purchase_rate) : '',
                 sale_rate: item.sale_rate ? String(item.sale_rate) : '',
-                stock: item.stock ? String(item.stock) : '',
+                add_stock: '',
                 unit: item.unit || ''
             });
         }
@@ -38,6 +38,10 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
+            const currentStock = parseInt(item.stock) || 0;
+            const newlyAddedStock = parseInt(formData.add_stock) || 0;
+            const finalCalculatedStock = currentStock + newlyAddedStock;
+            console.log(finalCalculatedStock, " ", newlyAddedStock, " ", currentStock);
             
             // Cast input numbers safely so the backend doesn't throw a SQL error
             const payload = {
@@ -46,7 +50,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                 mrp: parseFloat(formData.mrp) || 0,
                 purchase_rate: parseFloat(formData.purchase_rate) || 0,
                 sale_rate: parseFloat(formData.sale_rate) || 0,
-                stock: parseInt(formData.stock) || 0,
+                stock: finalCalculatedStock,
             };
 
             await axios.put(`${API_URL}/items/${item.item_id}`, payload, {
@@ -75,7 +79,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                     
                     <Text style={styles.staticText}>
                         <Text style={{fontWeight: '900', color: '#000'}}>Item ID: </Text>
-                        This is be from the database
+                        {item.item_id}
                     </Text>
 
                     <Text style={styles.label}>Item Barcode:</Text>
@@ -100,7 +104,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                     <TextInput style={styles.input} keyboardType="numeric" value={formData.sale_rate} onChangeText={(text) => setFormData({...formData, sale_rate: text})} />
 
                     <Text style={styles.label}>Stock:</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={formData.stock} onChangeText={(text) => setFormData({...formData, stock: text})} />
+                    <TextInput style={styles.input} keyboardType="numeric" value={formData.add_stock} onChangeText={(text) => setFormData({...formData, add_stock: text})} />
 
                     <Text style={styles.label}>Unit:</Text>
                     <TextInput style={styles.input} value={formData.unit} onChangeText={(text) => setFormData({...formData, unit: text})} />

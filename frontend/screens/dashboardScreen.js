@@ -27,7 +27,9 @@ export default function DashboardScreen({ navigation }) {
             navigation.navigate(route);
         } else if(route === 'Customers') {
             navigation.navigate(route)
-        }
+        } else if(route === 'Barcode') {
+            navigation.navigate(route)
+        } 
     };
     return (
         <View style={styles.container} >

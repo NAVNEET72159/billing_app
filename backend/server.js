@@ -140,7 +140,7 @@ app.post('/customer', verifyToken, async (req, res) => {
     }
 });
 
-app.get('/customer', verifyToken, async (req, res) => {
+app.get('/customers', verifyToken, async (req, res) => {
     try {
         const query = 'SELECT * FROM CUSTOMER ORDER BY customer_name ASC';
         const [rows] = await db.promise().query(query);
@@ -377,7 +377,7 @@ app.put('/items/:id', async (req, res) => {
 
     try {
         const updateQuery = `
-            UPDATE items 
+            UPDATE item 
             SET barcode = ?, item_name = ?, item_group_id = ?, 
                 gst_percentage = ?, mrp = ?, purchase_rate = ?, 
                 sale_rate = ?, stock = ?, unit = ?
