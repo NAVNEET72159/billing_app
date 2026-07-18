@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, Platform } from 'react-native';
 import { styles } from '../styles/InvoiceConfirmationModal.styles'
 
 export default function InvoiceConfirmationModal({ visible, cart, customer, grandTotal, onConfirm, onCancel }) {

@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/AddItemModal.styles';
 import { API_URL } from '../config/api';
 
-export default function AddItemModal({ visible, onClose, onAddSuccess }) {
+export default function AddItemModal({ visible, onClose, onAddSuccess, initialBarcode }) {
     const [formData, setFormData] = useState({
         barcode: '', item_name: '', item_group_name: '', gst_percentage: '',
         mrp: '', purchase_rate: '', sale_rate: '', stock: '', unit: ''
     });
     const [loading, setLoading] = useState(false);
+    useEffect(() => {
+        if (visible) {
+            setFormData(prevData => ({
+                ...prevData,
+                barcode: initialBarcode || ''
+            }));
+        }
+    }, [visible, initialBarcode]);
     const handleSave = async () => {
         if (!formData.item_name) {
             Alert.alert("Validation", "Item name is required.");

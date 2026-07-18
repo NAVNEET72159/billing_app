@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
+import { Platform } from 'react-native';
 
 export const generateInvoicePDF = async (cart, customer, grandTotal, invoiceNumber) => {
     const today = new Date().toLocaleDateString('en-IN');
@@ -174,14 +175,37 @@ export const generateInvoicePDF = async (cart, customer, grandTotal, invoiceNumb
     `;
 
     try {
-        // Generates a temporary PDF file on the device
-        const { base64 } = await Print.printToFileAsync({ 
-            html: htmlContent,
-            base64: true 
-        });
-        const safeFile = new File(Paths.document, `PYSSUM_Invoice_${invoiceNumber}.pdf`);
-        await safeFile.write(base64, { encoding: 'base64' });
-        await Sharing.shareAsync(safeFile.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+        if (Platform.OS === 'web') {
+            const printWindow = window.open('', '_blank');
+            
+            if (printWindow) {
+                // Write the HTML directly to the new window
+                printWindow.document.open();
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    
+                    // Automatically close the temporary tab after they save/cancel
+                    printWindow.onafterprint = () => {
+                        printWindow.close();
+                    };
+                }, 500);
+            } else {
+                // Fallback if the user has a strict pop-up blocker enabled
+                alert("Please allow pop-ups in your browser to print invoices.");
+            }
+        } else {
+            const { base64 } = await Print.printToFileAsync({ 
+                html: htmlContent,
+                base64: true 
+            });
+            const safeFile = new File(Paths.document, `PYSSUM_Invoice_${invoiceNumber}.pdf`);
+            await safeFile.write(base64, { encoding: 'base64' });
+            await Sharing.shareAsync(safeFile.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+        }
     } catch (error) {
         console.error("Error generating PDF:", error);
     }

@@ -12,10 +12,40 @@ const styles = StyleSheet.create({
         borderBottomColor: '#f0f0f0',
         backgroundColor: '#ffffff',
     },
-    logo: { width: 60, height: 40, resizeMode: 'contain' },
-    titleContainer: { flexDirection: 'row', alignItems: 'baseline' },
-    letter: { fontSize: 20, fontWeight: '900' },
-    posText: { fontSize: 20, fontWeight: '900', color: '#000000', marginLeft: 5 },
+    logocontainer: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    backButton: {
+        padding: 5,
+        width: 40,
+    },
+    back: {
+        width: 40,
+        height: 40
+    },
+    placeholder: {
+        width: 40,
+    },
+    logo: { 
+        width: 60, 
+        height: 40, 
+        resizeMode: 'contain' 
+    },
+    titleContainer: { 
+        flexDirection: 'row', 
+        alignItems: 'baseline' 
+    },
+    letter: { 
+        fontSize: 20, 
+        fontWeight: '900' 
+    },
+    posText: { 
+        fontSize: 20, 
+        fontWeight: '900', 
+        color: '#000000', 
+        marginLeft: 5 
+    },
 });
 
 export default styles;

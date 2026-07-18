@@ -1,6 +1,6 @@
 import BottomNav from '../components/BottomNav';
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Image, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/NewBillScreen.styles';
@@ -133,17 +133,29 @@ export default function NewBillScreen({ navigation }) {
             });
             
             const generatedInvoiceNumber = response.data.invoice_number;
-            Alert.alert(
-                'Payment Successful!',
-                `Invoice ${generatedInvoiceNumber} has been saved. Do you want to download the PDF?`,
-                [
-                    { text: "No, Start New Bill", style: "cancel", onPress: () => clearCartAndReset() },
-                    { text: "Yes, Download PDF", onPress: () => {
-                        generateInvoicePDF(cart, selectedCustomerInfo, grandTotal, generatedInvoiceNumber);
-                        clearCartAndReset();
-                    }}
-                ]
-            );
+            if (Platform.OS === 'web') {
+                const wantsToDownload = window.confirm(
+                    `Payment Successful!\n\nInvoice ${generatedInvoiceNumber} has been saved.\n\nClick "OK" to Download/Print the PDF, or "Cancel" to start a new bill.`
+                );
+                if (wantsToDownload) {
+                    generateInvoicePDF(cart, selectedCustomerInfo, grandTotal, generatedInvoiceNumber);
+                }
+                clearCartAndReset();
+                } else {
+                    
+                    Alert.alert(
+                        'Payment Successful!',
+                        `Invoice ${generatedInvoiceNumber} has been saved. Do you want to download the PDF?`,
+                        [
+                            { text: "No, Start New Bill", style: "cancel", onPress: () => clearCartAndReset() },
+                            { text: "Yes, Download PDF", onPress: () => {
+                                generateInvoicePDF(cart, selectedCustomerInfo, grandTotal, generatedInvoiceNumber);
+                                clearCartAndReset();
+                            }
+                        }
+                    ]
+                );
+            }
         } catch (error) {
             Alert.alert('Checkout Failed', 'Could not process the transaction.');
         } finally {

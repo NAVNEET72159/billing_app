@@ -2,17 +2,19 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/DashboardScreen.styles';
 import InventoryScreen from './InventoryScreens';
 import CustomerScreen from './CustomerScreen';
 
 export default function DashboardScreen({ navigation }) {
+        const { width } = useWindowDimensions();
+        const isDesktop = width > 768;
         const handleLogout = async () => {
-        await AsyncStorage.removeItem('userToken');
-        navigation.replace('Login');
-    };
+            await AsyncStorage.removeItem('userToken');
+            navigation.replace('Login');
+        };
     const menuItems = [
         { id: 1, title: 'New Bill', image: require('../assets/images/bill_invoice.png'), route: 'NewBill' },
         { id: 2, title: 'Inventory', image: require('../assets/images/inventory.png'), route: 'Inventory' },
@@ -43,15 +45,15 @@ export default function DashboardScreen({ navigation }) {
                     <Text style={styles.dashboardTitle}>DASHBOARD</Text>
                     <Text style={styles.dashboardSubtitle}>Select an action to continue</Text>
                 </View>
-                <View style={styles.gridContainer}>
+                <View style={[styles.gridContainer, isDesktop && { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center'}]}>
                     {menuItems.map((item) => (
                         <TouchableOpacity 
                             key={item.id} 
-                            style={styles.card}
+                            style={[styles.card, isDesktop && { width: 140, height: 140, padding: 10 }]}
                             onPress={() => handleNavigation(item.route)}
                         >
-                            <Image source={item.image} style={styles.cardIcon} />
-                            <Text style={styles.cardText}>{item.title}</Text>
+                            <Image source={item.image} style={[styles.cardIcon, isDesktop && { width: 60, height: 60 }]} />
+                            <Text style={[styles.cardText, isDesktop && { fontSize: 18 }]}>{item.title}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>

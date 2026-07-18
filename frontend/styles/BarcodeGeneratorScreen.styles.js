@@ -120,5 +120,19 @@ export const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 18,
         fontWeight: '900',
+    },
+    downloadBtn: {
+        backgroundColor: '#f5f5f5', 
+        borderWidth: 2,
+        borderColor: '#2c2c4d',
+        paddingVertical: 15,
+        borderRadius: 25,
+        alignItems: 'center',
+        marginTop: 15,
+    },
+    downloadBtnText: {
+        color: '#2c2c4d',
+        fontSize: 16,
+        fontWeight: 'bold',
     }
 });

@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform } from 'react-native';
 import Header from '../components/Header';
 import { styles } from '../styles/BarcodeGeneratorScreen.styles';
+import AddItemModal from '../components/AddItemModal'; 
+import { captureRef, MediaLibrary } from '../components/utils/NativeModules';
 
 export default function BarcodeGeneratorScreen({ navigation }) {
     const [barcode, setBarcode] = useState('');
+    const [isAddModalVisible, setAddModalVisible] = useState(false);
+    const barcodeViewRef = useRef();
     const generateRandomBarcode = () => {
         const newCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
         setBarcode(newCode);
@@ -44,8 +48,42 @@ export default function BarcodeGeneratorScreen({ navigation }) {
             Alert.alert("Empty", "Please generate or enter a barcode first.");
             return;
         }
-        Alert.alert("Coming Soon", `Barcode ${barcode} is ready! We can link this to the Add Inventory screen next.`);
+        setAddModalVisible(true);
     };
+
+    const saveBarcodeLocally = async () => {
+        if (!barcode) {
+            Alert.alert("Empty", "Please generate a barcode to save first.");
+            return;
+        }
+
+        if (Platform.OS === 'web') {
+            Alert.alert("Web Mode", "Saving directly to the photo gallery is only supported on mobile devices.");
+            return;
+        }
+        if (!MediaLibrary || !captureRef) {
+            Alert.alert("Rebuild Required", "Native modules are missing. Please rebuild the Android app.");
+            return;
+        }
+        
+        try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'We need permission to save images to your gallery.');
+                return;
+            }
+            const localUri = await captureRef(barcodeViewRef, {
+                format: 'png',
+                quality: 1,
+            });
+            await MediaLibrary.saveToLibraryAsync(localUri);
+            Alert.alert("Success!", `Barcode ${barcode} has been saved to your photo gallery.`);
+            
+        } catch (error) {
+            console.error("Save Image Error:", error);
+            Alert.alert("Error", "Failed to save the barcode image.");
+        }
+    }
 
     return (
         <View style={styles.container}>
@@ -55,7 +93,7 @@ export default function BarcodeGeneratorScreen({ navigation }) {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 
                 {/* The Visual Barcode Display Card */}
-                <View style={styles.displayCard}>
+                <View style={styles.displayCard} ref={barcodeViewRef} collapsable={false} >
                     {barcode ? (
                         <View style={styles.barcodeContainer}>
                             {renderVisualBarcode()}
@@ -93,9 +131,21 @@ export default function BarcodeGeneratorScreen({ navigation }) {
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
                         <Text style={styles.saveBtnText}>Assign to Inventory Item</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={styles.downloadBtn} onPress={saveBarcodeLocally}>
+                        <Text style={styles.downloadBtnText}>⬇️ Save as PNG</Text>
+                    </TouchableOpacity>
                 </View>
 
             </ScrollView>
+            <AddItemModal 
+                visible={isAddModalVisible}
+                onClose={() => setAddModalVisible(false)}
+                initialBarcode={barcode}
+                onAddSuccess={() => {
+                    setBarcode('');
+                    navigation.navigate('Inventory');
+                }}
+            />
         </View>
     );
 }
