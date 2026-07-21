@@ -101,12 +101,31 @@ app.post('/login', (req, res) => {
 // ==========================================
 // Any logged-in user (Admin or Sales) can view items
 app.get('/items', verifyToken, (req, res) => {
-    const query = 'SELECT item_id, barcode, item_name, item_group_id, mrp, sale_rate, stock, gst_percentage FROM ITEM';
+    const isArchived = req.query.archived === 'true';
+    const query = isArchived
+        ? 'SELECT item_id, barcode, item_name, item_group_id, mrp, sale_rate, stock, gst_percentage FROM ITEM WHERE is_active = FALSE'
+        : 'SELECT item_id, barcode, item_name, item_group_id, mrp, sale_rate, stock, gst_percentage FROM ITEM WHERE is_active = TRUE';
     db.query(query, (err, results) => {
         if (err) 
             if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
+});
+
+app.put('/items/:id/restore', verifyToken, async (req, res) => {
+    const itemId = req.params.id;
+
+    try {
+        const restoreQuery = 'UPDATE item SET is_active = TRUE WHERE item_id = ?';
+        const [result] = await db.promise().query(restoreQuery, [itemId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "No item found with that ID!" });
+        }
+        res.status(200).json({ message: "Item restored successfully!" });
+    } catch (error) {
+        console.error("Database Restore Error:", error);
+        res.status(500).json({ error: "Failed to restore item" });
+    }
 });
 
 // ==========================================
@@ -345,20 +364,19 @@ app.post('/items', async (req, res) => {
     }
 });
 
-app.delete('/items/:id', async (req, res) => {
+app.delete('/items/:id', verifyToken, async (req, res) => {
     const itemId = req.params.id;
 
     try {
-        const deleteQuery = 'DELETE FROM item WHERE item_id = ?';
-        const [result] = await db.promise().query(deleteQuery, [itemId]);
+        const archiveQuery = 'UPDATE item SET is_active = FALSE WHERE item_id = ?';
+        const [result] = await db.promise().query(archiveQuery, [itemId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "No item found with that ID!" });
         }
-
-        res.status(200).json({ message: "Item deleted successfully!" });
+        res.status(200).json({ message: "Item archived successfully!" });
     } catch (error) {
         console.error("Database Delete Error:", error);
-        res.status(500).json({ error: "Failed to delete item from database" });
+        res.status(500).json({ error: "Failed to archive item" });
     }
 });
 
@@ -399,5 +417,22 @@ app.put('/items/:id', async (req, res) => {
     } catch (error) {
         console.error("Database Update Item Error:", error);
         res.status(500).json({ error: "Failed to update item in database" });
+    }
+});
+
+app.get('/groups', verifyToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT item_group_id, group_name 
+            FROM item_group 
+            ORDER BY group_name ASC
+        `;
+        const [results] = await db.promise().query(query);
+
+        res.status(200).json(results);
+        
+    } catch (error) {
+        console.error("Error fetching item groups:", error);
+        res.status(500).json({ error: "Failed to fetch item groups from database." });
     }
 });

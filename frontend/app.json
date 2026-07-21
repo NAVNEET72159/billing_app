@@ -1,11 +1,13 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "WELCOME! TO PYSSUM POS",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "light",
+    "scheme": "pyssumpos",
+    
     "ios": {
       "supportsTablet": true
     },

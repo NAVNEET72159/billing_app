@@ -1,14 +1,17 @@
-import { captureRef } from 'react-native-view-shot';
-import * as MediaLibrary from 'expo-media-library';
-
-captureRef = null;
-MediaLibrary = null;
+let captureRefFn = null;
+let mediaLibraryModule = null;
 
 try {
-    captureRef = require('react-native-view-shot').captureRef;
-    MediaLibrary = require('expo-media-library');
+    captureRefFn = require('react-native-view-shot').captureRef;
 } catch (error) {
-    console.warn("Native modules are compiling...");
+    console.warn('react-native-view-shot is unavailable in this environment.', error);
 }
 
-export { captureRef, MediaLibrary };
+try {
+    mediaLibraryModule = require('expo-media-library');
+} catch (error) {
+    console.warn('expo-media-library is unavailable in this environment.', error);
+}
+
+export const captureRef = captureRefFn;
+export const MediaLibrary = mediaLibraryModule;

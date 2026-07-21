@@ -4,6 +4,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/UpdateItemModel.styles';
 import { API_URL } from '../config/api';
+import CustomDropdown from '../components/CustomDropdown';
+
 
 export default function UpdateItemModal({ visible, item, onClose, onUpdateSuccess }) {
     const [formData, setFormData] = useState({});
@@ -14,15 +16,16 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                 barcode: item.barcode || '',
                 item_name: item.item_name || '',
                 item_group_id: item.item_group_id || '',
+                item_group_name: item.item_group_name || '',
                 gst_percentage: item.gst_percentage ? String(item.gst_percentage) : '',
                 mrp: item.mrp ? String(item.mrp) : '',
                 purchase_rate: item.purchase_rate ? String(item.purchase_rate) : '',
                 sale_rate: item.sale_rate ? String(item.sale_rate) : '',
-                add_stock: '',
+                add_stock: '', 
                 unit: item.unit || ''
             });
         }
-    }, [item]);
+    }, [item]); 
 
     const handleSave = async () => {
         if (!item || !item.item_id) {
@@ -42,8 +45,6 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
             const newlyAddedStock = parseInt(formData.add_stock) || 0;
             const finalCalculatedStock = currentStock + newlyAddedStock;
             console.log(finalCalculatedStock, " ", newlyAddedStock, " ", currentStock);
-            
-            // Cast input numbers safely so the backend doesn't throw a SQL error
             const payload = {
                 ...formData,
                 gst_percentage: parseFloat(formData.gst_percentage) || 0,
@@ -58,7 +59,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
             });
 
             Alert.alert("Success", "Item updated successfully!");
-            onUpdateSuccess(); // Instantly reloads the main Inventory list
+            onUpdateSuccess();
             onClose(); 
         } catch (error) {
             console.error("Update Item Error:", error);
@@ -66,6 +67,16 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
         } finally {
             setLoading(false);
         }
+    };
+    const handleCreateNewGroup = () => {
+        Alert.alert(
+            "New Item Group",
+            "This will trigger your Add Group screen or database prompt.",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "OK", onPress: () => console.log("Open Add Group feature") }
+            ]
+        );
     };
 
     if (!visible || !item) return null;
@@ -103,9 +114,18 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                     <Text style={styles.label}>Sale Rate:</Text>
                     <TextInput style={styles.input} keyboardType="numeric" value={formData.sale_rate} onChangeText={(text) => setFormData({...formData, sale_rate: text})} />
 
-                    <Text style={styles.label}>Stock:</Text>
+                    <Text style={[styles.label, { color: '#1565c0', fontWeight: 'bold', marginTop: 5 }]}>Stock: {item.stock || 0}</Text>
                     <TextInput style={styles.input} keyboardType="numeric" value={formData.add_stock} onChangeText={(text) => setFormData({...formData, add_stock: text})} />
 
+                    <Text style={styles.label}>Add New Stock:</Text>
+                    <TextInput 
+                        style={styles.input} 
+                        keyboardType="numeric" 
+                        placeholder="e.g. 50"
+                        value={formData.add_stock} 
+                        onChangeText={(text) => setFormData({...formData, add_stock: text})} 
+                    />
+                    
                     <Text style={styles.label}>Unit:</Text>
                     <TextInput style={styles.input} value={formData.unit} onChangeText={(text) => setFormData({...formData, unit: text})} />
 

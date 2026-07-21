@@ -26,9 +26,24 @@ export const styles = StyleSheet.create({
     label: { 
         fontSize: 14, 
         color: '#000', 
-        marginLeft: 10,
+        marginLeft: 10, 
         marginBottom: 5 
     },
+    stockHighlightBox: {
+        backgroundColor: '#e3f2fd',
+        padding: 12,
+        borderRadius: 15,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#90caf9'
+    },
+    currentStockText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1565c0',
+        textAlign: 'center'
+    },
+
     input: { 
         backgroundColor: '#c4c0b3', 
         borderRadius: 25, 

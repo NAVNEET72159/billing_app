@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Alert, Platform } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/InventoryScreen.styles';
@@ -17,50 +17,98 @@ export default function InventoryScreen({ navigation }) {
     const [selectedItemForUpdate, setSelectedItemForUpdate] = useState(null);
     const [isUpdateModalVisible, setUpdateModalVisible] = useState(false);
     const [isAddModalVisible, setAddModalVisible] = useState(false);
+    const [showArchived, setShowArchived] = useState(false);
 
     useEffect(() => {
         fetchInventory();
     }, []);
 
     const fetchInventory = async () => {
+        setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const response = await axios.get(`${API_URL}/items`, {
+            const response = await axios.get(`${API_URL}/items?archived=${showArchived}`, {
                 headers: { Authorization: `Bearer ${token}` },
                 timeout: 5000
             });
             setInventory(response.data);
         } catch (error) {
             console.error("Error fetching inventory:", error);
-            Alert.alert("Error", "Failed to load inventory. Check your network.");
+            if (Platform.OS !== 'web') {
+                Alert.alert("Error", "Failed to load inventory.");
+            } else {
+                window.alert("Failed to load inventory.");
+            }
         } finally {
             setLoading(false);
         }
     };
-    const handleDeleteClick = (item) => {
-        Alert.alert(
-            "Delete Item",
-            `Are you sure you want to permanently delete "${item.item_name}"?`,
-            [
-                { text: "Cancel", style: "cancel" },
-                { 
-                    text: "DELETE", 
-                    style: "destructive", 
-                    onPress: async () => {
-                        try {
-                            const token = await AsyncStorage.getItem('userToken');
-                            await axios.delete(`${API_URL}/items/${item.item_id}`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                            });setInventory(prev => prev.filter(i => i.item_id !== item.item_id));
-                            Alert.alert("Deleted", "Item removed successfully.");
-                        } catch (error) {
-                            console.error("Delete Error:", error);
-                            Alert.alert("Error", "Could not delete the item.");
-                        }
-                    } 
-                }
-            ]
-        );
+    useEffect(() => {
+        fetchInventory();
+    }, [showArchived]);
+
+    const handleRestoreClick = async (item) => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            await axios.put(`${API_URL}/items/${item.item_id}/restore`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setInventory(prev => prev.filter(i => String(i.item_id) !== String(item.item_id)));
+            
+            if (Platform.OS !== 'web') {
+                Alert.alert("Restored", "Item is back in your active inventory!");
+            } else {
+                window.alert("Item is back in your active inventory!");
+            }
+        } catch (error) {
+            console.error("Restore Error:", error);
+        }
+    };
+
+    const executeDelete = async (item) => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            await axios.delete(`${API_URL}/items/${item.item_id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            // Immediately remove it from the screen
+            setInventory(prev => prev.filter(i => String(i.item_id) !== String(item.item_id)));
+            
+            if (Platform.OS !== 'web') {
+                Alert.alert("Deleted", "Item removed successfully.");
+            } else {
+                window.alert("Item removed successfully.");
+            }
+        } catch (error) {
+            console.error("Delete Error:", error);
+            if (Platform.OS !== 'web') {
+                Alert.alert("Error", "Could not delete the item.");
+            } else {
+                window.alert("Could not delete the item.");
+            }
+        }
+    };
+    const handleDeleteClick = async (item) => {
+        if (Platform.OS === 'web') {
+            const confirmDelete = window.confirm(`Are you sure you want to permanently delete "${item.item_name}"?`);
+            if (confirmDelete) {
+                executeDelete(item);
+            }
+        }
+        else {
+            Alert.alert(
+                "Delete Item",
+                `Are you sure you want to permanently delete "${item.item_name}"?`,
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { 
+                        text: "DELETE", 
+                        style: "destructive", 
+                        onPress: () => executeDelete(item)
+                    }
+                ]
+            );
+        }
     };
     const handleUpdateClick = (item) => {
         setSelectedItemForUpdate(item);
@@ -89,11 +137,19 @@ export default function InventoryScreen({ navigation }) {
                     containerStyle={styles.searchContainer} 
                 />
                 <TouchableOpacity 
-                    style={styles.newButton}
-                    onPress={() => setAddModalVisible(true)}
+                    style={[styles.newButton, { backgroundColor: showArchived ? '#e53935' : '#7cb342', marginRight: 10 }]}
+                    onPress={() => setShowArchived(!showArchived)}
                 >
-                    <Text style={styles.newButtonText}>New +</Text>
+                    <Text style={styles.newButtonText}>{showArchived ? 'View Active' : 'View Archived'}</Text>
                 </TouchableOpacity>
+                {!showArchived && (
+                    <TouchableOpacity 
+                        style={styles.newButton}
+                        onPress={() => setAddModalVisible(true)}
+                    >
+                        <Text style={styles.newButtonText}>New +</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             {loading ? (
@@ -146,12 +202,20 @@ export default function InventoryScreen({ navigation }) {
                                 </TouchableOpacity>
                                 {isExpanded && (
                                     <View style={styles.actionRow}>
-                                        <TouchableOpacity style={styles.updateBtn} onPress={() => handleUpdateClick(item)}>
-                                            <Text style={styles.actionBtnText}>UPDATE</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteClick(item)}>
-                                            <Text style={styles.actionBtnText}>DELETE</Text>
-                                        </TouchableOpacity>
+                                        {!showArchived ? (
+                                            <>
+                                                <TouchableOpacity style={styles.updateBtn} onPress={() => handleUpdateClick(item)}>
+                                                    <Text style={styles.actionBtnText}>UPDATE</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteClick(item)}>
+                                                    <Text style={styles.actionBtnText}>DELETE</Text>
+                                                </TouchableOpacity>
+                                            </>
+                                        ):(
+                                            <TouchableOpacity style={[styles.updateBtn, { backgroundColor: '#1976d2' }]} onPress={() => handleRestoreClick(item)}>
+                                                <Text style={styles.actionBtnText}>RESTORE ITEM</Text>
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
                                 )}
                             </View>
