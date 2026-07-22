@@ -436,3 +436,69 @@ app.get('/groups', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch item groups from database." });
     }
 });
+
+// ==========================================
+// 🧾 INVOICE & RESTOCKING ROUTES 
+// ==========================================
+
+app.get('/invoices', verifyToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT s.sale_id, s.invoice_number, s.grand_total, s.payment_method, s.sale_date, c.customer_name
+            FROM SALES s
+            LEFT JOIN CUSTOMER c ON s.customer_id = c.customer_id
+            ORDER BY s.sale_date DESC
+        `;
+        const [invoices] = await db.promise().query(query);
+        res.status(200).json(invoices);
+    } catch (error) {
+        console.error("Fetch Invoices Error:", error);
+        res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+});
+
+app.delete('/invoices/:id', verifyToken, async (req, res) => {
+    const saleId = req.params.id;
+    const connection = await db.promise().getConnection();
+
+    try {
+        await connection.beginTransaction();
+        const getItemsQuery = 'SELECT item_id, quantity FROM SALES_ITEM WHERE sale_id = ?';
+        const [soldItems] = await connection.query(getItemsQuery, [saleId]);
+        for (let item of soldItems) {
+            const restockQuery = 'UPDATE ITEM SET stock = stock + ? WHERE item_id = ?';
+            await connection.query(restockQuery, [item.quantity, item.item_id]);
+        }
+        await connection.query('DELETE FROM SALES_ITEM WHERE sale_id = ?', [saleId]);
+        const [deleteResult] = await connection.query('DELETE FROM SALES WHERE sale_id = ?', [saleId]);
+        if (deleteResult.affectedRows === 0) {
+            throw new Error("Invoice not found.");
+        }
+        await connection.commit();
+        res.status(200).json({ message: "Invoice deleted and stock revised successfully!" });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Delete Invoice Error:", error);
+        res.status(500).json({ error: "Failed to delete invoice and revise stock." });
+    } finally {
+        connection.release();
+    }
+});
+
+app.get('/invoices/:id/items', verifyToken, async (req, res) => {
+    const saleId = req.params.id;
+    try {
+        const query = `
+            SELECT si.quantity, si.sale_rate, si.tax_amount, si.amount, i.item_name, i.barcode 
+            FROM SALES_ITEM si
+            LEFT JOIN ITEM i ON si.item_id = i.item_id
+            WHERE si.sale_id = ?
+        `;
+        const [items] = await db.promise().query(query, [saleId]);
+        res.status(200).json(items);
+    } catch (error) {
+        console.error("Fetch Invoice Items Error:", error);
+        res.status(500).json({ error: "Failed to fetch invoice details" });
+    }
+});

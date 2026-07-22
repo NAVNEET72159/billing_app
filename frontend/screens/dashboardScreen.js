@@ -2,7 +2,7 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, useWindowDimensions, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/DashboardScreen.styles';
 import InventoryScreen from './InventoryScreens';
@@ -12,8 +12,7 @@ export default function DashboardScreen({ navigation }) {
         const { width } = useWindowDimensions();
         const isDesktop = width > 768;
         const handleLogout = async () => {
-            await AsyncStorage.removeItem('userToken');
-            navigation.replace('Login');
+            DeviceEventEmitter.emit('triggerGlobalLogout', 'You have securely logged out.');    
         };
     const menuItems = [
         { id: 1, title: 'New Bill', image: require('../assets/images/bill_invoice.png'), route: 'NewBill' },
@@ -21,6 +20,7 @@ export default function DashboardScreen({ navigation }) {
         { id: 3, title: 'Customer', image: require('../assets/images/users.png'), route: 'Customers' },
         { id: 4, title: 'Reports', image: require('../assets/images/report.png'), route: 'Reports' },
         { id: 5, title: 'Barcode Generator', image: require('../assets/images/barcode.png'), route: 'Barcode' },
+        { id: 6, title: 'Invoice Screen', image: require('../assets/images/invoice-bill.png'), route: 'Invoice'}
     ];
     const handleNavigation = (route) => {
         if(route === 'NewBill') {
@@ -31,7 +31,9 @@ export default function DashboardScreen({ navigation }) {
             navigation.navigate(route)
         } else if(route === 'Barcode') {
             navigation.navigate(route)
-        } 
+        } else if(route === 'Invoice') {
+            navigation.navigate(route)
+        }
     };
     return (
         <View style={styles.container} >

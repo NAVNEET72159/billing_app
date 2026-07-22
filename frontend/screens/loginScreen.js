@@ -1,12 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import React, {useState} from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/LoginScreen.styles';
 import { loginUser } from '../services/authServices';
 
-export default function LogInScreen({ navigation }) {
+export default function LogInScreen({ navigation, setToken }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,11 +16,13 @@ export default function LogInScreen({ navigation }) {
       return;
     }
     try {
-      setLoading(false);
+      setLoading(true);
       const response = await loginUser(username, password);
       if (response && response.token) {
         await AsyncStorage.setItem('userToken', response.token);
-        navigation.replace('Dashboard');
+        if (setToken) {
+           setToken(response.token);
+        }
       }
     } catch (error) {
       const errorMessage = error.response ? error.response.data.error : 'Network error. Is the server running?';
