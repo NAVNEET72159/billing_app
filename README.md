@@ -1,4 +1,4 @@
-# ShanDelay Enterprises - POS System
+# PYSSUM - POS System
 *Stocking the Present, Building the Future.*
 
 ## 📖 Overview
