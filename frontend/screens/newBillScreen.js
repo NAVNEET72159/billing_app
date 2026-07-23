@@ -58,6 +58,25 @@ export default function NewBillScreen({ navigation }) {
         }
     };
     const addToCart = (item) => {
+        if (item.stock <= 0) {
+            const errorMsg = `${item.item_name} is unavailable in the inventory (Out of Stock).`;
+            if (Platform.OS === 'web') {
+                window.alert(errorMsg);
+            } else {
+                Alert.alert("Item Unavailable", errorMsg);
+            }
+            return;
+        }
+        const existingCartItem = cart.find(c => c.item_id === item.item_id);
+        if (existingCartItem && existingCartItem.quantity >= item.stock) {
+            const limitMsg = `You cannot add more ${item.item_name}. Only ${item.stock} left in stock.`;
+            if (Platform.OS === 'web') {
+                window.alert(limitMsg);
+            } else {
+                Alert.alert("Stock Limit Reached", limitMsg);
+            }
+            return;
+        }
         setCart(currentCart => {
             const existingItem = currentCart.find(cartItem => cartItem.item_id === item.item_id);
             if (existingItem) {

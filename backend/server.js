@@ -502,3 +502,67 @@ app.get('/invoices/:id/items', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch invoice details" });
     }
 });
+
+app.post('/item-groups', verifyToken, async (req, res) => {
+    const { group_name } = req.body;
+    
+    if (!group_name) {
+        return res.status(400).json({ error: "Group name is required." });
+    }
+
+    try {
+        const query = 'INSERT INTO item_group (group_name) VALUES (?)';
+        const [result] = await db.promise().query(query, [group_name]);
+        res.status(201).json({ 
+            item_group_id: result.insertId, 
+            group_name: group_name 
+        });
+    } catch (error) {
+        console.error("Create Group Error:", error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: "This group already exists!" });
+        }
+        res.status(500).json({ error: "Failed to create item group." });
+    }
+});
+
+// ==========================================
+// 📊 Top Selling Item Route (Transactions)
+// ==========================================
+app.get('/reports/monthly-top-items', verifyToken, async (req, res) => {
+    try {
+        // This query fetches the total quantity sold for every item, grouped by month
+        const query = `
+            SELECT 
+                DATE_FORMAT(s.sale_date, '%b') AS month_name,
+                MONTH(s.sale_date) AS month_num,
+                i.item_name,
+                SUM(si.quantity) AS total_sold
+            FROM SALES_ITEM si
+            JOIN SALES s ON si.sale_id = s.sale_id
+            JOIN ITEM i ON si.item_id = i.item_id
+            GROUP BY month_num, month_name, i.item_name
+            ORDER BY month_num ASC, total_sold DESC
+        `;
+        
+        const [results] = await db.promise().query(query);
+        const topItemsPerMonth = [];
+        const seenMonths = new Set();
+
+        for (const row of results) {
+            if (!seenMonths.has(row.month_num)) {
+                topItemsPerMonth.push({
+                    month: row.month_name,
+                    itemName: row.item_name,
+                    totalSold: Number(row.total_sold)
+                });
+                seenMonths.add(row.month_num);
+            }
+        }
+
+        res.status(200).json(topItemsPerMonth);
+    } catch (error) {
+        console.error("Report Fetch Error:", error);
+        res.status(500).json({ error: "Failed to fetch report data" });
+    }
+});

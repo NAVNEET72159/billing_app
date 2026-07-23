@@ -7,6 +7,9 @@ import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown';
 
 export default function AddItemModal({ visible, onClose, onAddSuccess, initialBarcode }) {
+    const [isGroupModalVisible, setGroupModalVisible] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
     const [formData, setFormData] = useState({
         barcode: '', item_name: '', item_group_id: '', item_group_name: '', gst_percentage: '',
         mrp: '', purchase_rate: '', sale_rate: '', stock: '', unit: ''
@@ -40,10 +43,37 @@ export default function AddItemModal({ visible, onClose, onAddSuccess, initialBa
     };
 
     const handleCreateNewGroup = () => {
-        if (typeof window !== 'undefined' && window.alert) {
-            window.alert("This will trigger your Add Group screen or database prompt.");
-        } else {
-            Alert.alert("New Item Group", "This will trigger your Add Group screen or database prompt.");
+        setGroupModalVisible(true);
+    };
+
+    const submitNewGroup = async () => {
+        if (!newGroupName.trim()) {
+            Alert.alert("Error", "Please enter a name for the group.");
+            return;
+        }
+
+        setIsSubmittingGroup(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.post(`${API_URL}/item-groups`, 
+                { group_name: newGroupName }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const newGroupObj = { 
+                name: response.data.group_name, 
+                id: response.data.item_group_id 
+            };
+            setItemGroups(prev => [...prev, newGroupObj]);
+            setFormData({ ...formData, itemGroup: newGroupObj.name });
+            Alert.alert("Success", "Item Group created!");
+            setGroupModalVisible(false);
+            setNewGroupName('');
+        } catch (error) {
+            console.error("Submit Group Error:", error);
+            const errMsg = error.response ? error.response.data.error : "Failed to create group.";
+            Alert.alert("Error", errMsg);
+        } finally {
+            setIsSubmittingGroup(false);
         }
     };
 
@@ -189,6 +219,51 @@ export default function AddItemModal({ visible, onClose, onAddSuccess, initialBa
                     </View>
                 </ScrollView>
             </View>
+            <Modal visible={isGroupModalVisible} animationType="fade" transparent={true}>
+                <View style={styles.groupModalOverlay}>
+                    <View style={styles.groupModalContainer}>
+                        
+                        <Text style={styles.groupModalTitle}>Create Item Group</Text>
+                        <Text style={styles.groupModalLabelBold}>
+                            Item Group ID: <Text style={{fontWeight: 'normal', color: '#666'}}>(Auto-Generated)</Text>
+                        </Text>
+                        
+                        <Text style={styles.groupModalLabel}>Item Name:</Text>
+                        <TextInput 
+                            style={styles.groupModalInput}
+                            value={newGroupName}
+                            onChangeText={setNewGroupName}
+                            placeholder="e.g., Electronics, Dairy..."
+                            placeholderTextColor="#888"
+                            autoFocus={true}
+                        />
+
+                        <View style={styles.groupModalBtnRow}>
+                            <TouchableOpacity 
+                                style={styles.groupModalCancelBtn}
+                                onPress={() => {
+                                    setGroupModalVisible(false);
+                                    setNewGroupName('');
+                                }}
+                            >
+                                <Text style={styles.groupModalBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={styles.groupModalSubmitBtn}
+                                onPress={submitNewGroup}
+                                disabled={isSubmittingGroup}
+                            >
+                                {isSubmittingGroup ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.groupModalBtnText}>Submit</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </Modal>
     );
 }

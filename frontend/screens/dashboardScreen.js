@@ -33,6 +33,8 @@ export default function DashboardScreen({ navigation }) {
             navigation.navigate(route)
         } else if(route === 'Invoice') {
             navigation.navigate(route)
+        } else if(route === 'Reports') {
+            navigation.navigate('Reports')
         }
     };
     return (
