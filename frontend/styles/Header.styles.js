@@ -6,7 +6,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: 50,
+        paddingTop: 10,
         paddingBottom: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
@@ -28,8 +28,8 @@ const styles = StyleSheet.create({
         width: 40,
     },
     logo: { 
-        width: 60, 
-        height: 40, 
+        width: 120, 
+        height: 100, 
         resizeMode: 'contain' 
     },
     titleContainer: { 
@@ -37,14 +37,19 @@ const styles = StyleSheet.create({
         alignItems: 'baseline' 
     },
     letter: { 
-        fontSize: 20, 
+        fontSize: 30, 
         fontWeight: '900' 
     },
     posText: { 
-        fontSize: 20, 
+        fontSize: 30, 
         fontWeight: '900', 
         color: '#000000', 
         marginLeft: 5 
+    },
+    logout: { 
+        width: 50, 
+        height: 50, 
+        resizeMode: 'contain' 
     },
 });
 

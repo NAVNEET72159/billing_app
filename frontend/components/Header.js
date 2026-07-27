@@ -27,18 +27,18 @@ export default function Header({ rightIcon, onIconPress }) {
             </View>
             
             <View style={styles.titleContainer}>
-                <Text style={[styles.letter, { color: '#e74c3c' }]}>P</Text>
-                <Text style={[styles.letter, { color: '#f1c40f' }]}>Y</Text>
-                <Text style={[styles.letter, { color: '#8cc63f' }]}>S</Text>
-                <Text style={[styles.letter, { color: '#8cc63f' }]}>S</Text>
-                <Text style={[styles.letter, { color: '#e6ba9f' }]}>U</Text>
+                <Text style={[styles.letter, { color: '#2c3e50' }]}>P</Text>
+                <Text style={[styles.letter, { color: '#2c3e50' }]}>Y</Text>
+                <Text style={[styles.letter, { color: '#2c3e50' }]}>S</Text>
+                <Text style={[styles.letter, { color: '#2c3e50' }]}>S</Text>
+                <Text style={[styles.letter, { color: '#2c3e50' }]}>U</Text>
                 <Text style={[styles.letter, { color: '#2c3e50' }]}>M</Text>
                 <Text style={styles.posText}>POS</Text>
             </View>
 
             {onIconPress ? (
             <TouchableOpacity onPress={onIconPress}>
-                <Image source={require('../assets/images/logout.png')} style={styles.logo} />
+                <Image source={require('../assets/images/logout.png')} style={styles.logout} />
             </TouchableOpacity>
             ) : (
                 <View style={styles.rightIcon} />

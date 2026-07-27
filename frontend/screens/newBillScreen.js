@@ -21,6 +21,7 @@ export default function NewBillScreen({ navigation }) {
     const [itemSearchText, setItemSearchText] = useState('');
     const [selectedCustomerInfo, setSelectedCustomerInfo] = useState(null);
     const [isConfirmationVisible, setConfirmationVisible] = useState(false);
+    const [isCartVisible, setIsCartVisible] = useState(false);
     useEffect(() => {
         fetchInventory();
         fetchCustomers();
@@ -87,6 +88,29 @@ export default function NewBillScreen({ navigation }) {
                 return [...currentCart, { ...item, quantity: 1 }];
             }
         });
+    };
+    const handleManualQuantity = (item, text) => {
+        if (text === '') {
+            setCart(prev => prev.map(c => c.item_id === item.item_id ? { ...c, quantity: '' } : c));
+            return;
+        }
+        const qty = parseInt(text, 10);
+        if (isNaN(qty)) return;
+        if (qty > item.stock) {
+            const limitMsg = `You cannot add ${qty} ${item.item_name}. Only ${item.stock} left in stock.`;
+            if (Platform.OS === 'web') {
+                window.alert(limitMsg);
+            } else {
+                Alert.alert("Stock Limit Reached", limitMsg);
+            }
+            setCart(prev => prev.map(c => c.item_id === item.item_id ? { ...c, quantity: item.stock } : c));
+            return;
+        }
+        if (qty <= 0) {
+            setCart(prev => prev.filter(c => c.item_id !== item.item_id));
+            return;
+        }
+        setCart(prev => prev.map(c => c.item_id === item.item_id ? { ...c, quantity: qty } : c));
     };
     const removeFromCart = (itemId) => {
         setCart(currentCart => {
@@ -233,8 +257,19 @@ export default function NewBillScreen({ navigation }) {
             <View style={styles.header}>
                 <Header />
             </View>
-            <Text style={styles.pageTitle}>New Bill</Text>
             
+            <View style={styles.titleRow}>
+                <Text style={styles.pageTitle}>New Bill</Text>
+                <TouchableOpacity style={styles.cartIconBtn} onPress={() => setIsCartVisible(true)}>
+                    <Text style={{ fontSize: 32 }}>🛒</Text>
+                    {cart.length > 0 && (
+                        <View style={styles.cartBadge}>
+                            <Text style={styles.cartBadgeText}>{cart.length}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            </View>
+
             <View style={styles.searchContainer}>
                 <SearchBar 
                     placeholder="Search items by name..." 
@@ -272,17 +307,84 @@ export default function NewBillScreen({ navigation }) {
                     ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 20}}>No items found.</Text>}
                 />
             )}
-            {cart.length > 0 && (
-                <View style={styles.checkoutBar}>
-                    <View>
-                        <Text style={styles.totalLabel}>Grand Total</Text>
-                        <Text style={styles.totalAmount}>₹{grandTotal.toFixed(2)}</Text>
-                    </View>
-                    <TouchableOpacity style={styles.checkoutButton} onPress={handleProceedClick}>
-                        <Text style={styles.checkoutButtonText}>Proceed ➡️</Text>
+            <Modal visible={isCartVisible} animationType="fade" transparent={true}>
+                <TouchableOpacity 
+                    style={styles.cartOverlay} 
+                    activeOpacity={1} 
+                    onPress={() => setIsCartVisible(false)}
+                >
+                    <TouchableOpacity activeOpacity={1} style={styles.sideCartPanel}>
+                        <View style={styles.sideCartHeader}>
+                            <Text style={styles.sideCartTitle}>Cart Items</Text>
+                            <TouchableOpacity onPress={() => setIsCartVisible(false)}>
+                                <Text style={styles.closeCartIcon}>✖</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.sideCartTitle}>Cart Items</Text>
+                        
+                        <FlatList 
+                            data={cart}
+                            keyExtractor={(item) => item.item_id.toString()}
+                            showsVerticalScrollIndicator={false}
+                            renderItem={({ item }) => (
+                                <View style={styles.sideCartItem}>
+                                    
+                                    <View style={styles.sideCartItemTop}>
+                                        <Text style={styles.sideCartItemName}>{item.item_name}</Text>
+                                        <Text style={styles.sideCartItemPrice}>₹{item.sale_rate * (Number(item.quantity) || 0)}</Text>
+                                    </View>
+                                    
+                                    <View style={styles.sideCartItemBottom}>
+                                        <Text style={styles.sideCartQtyLabel}>Quantity:</Text>
+                                        
+                                        {/* Manual Text Box Controls */}
+                                        <View style={styles.qtyControlRow}>
+                                            <TouchableOpacity 
+                                                style={styles.smallQtyBtn} 
+                                                onPress={() => handleManualQuantity(item, String((Number(item.quantity) || 0) - 1))}
+                                            >
+                                                <Text style={styles.smallQtyText}>-</Text>
+                                            </TouchableOpacity>
+                                            
+                                            <TextInput 
+                                                style={styles.smallQtyInput}
+                                                keyboardType="numeric"
+                                                value={String(item.quantity)}
+                                                onChangeText={(text) => handleManualQuantity(item, text)}
+                                                selectTextOnFocus={true}
+                                            />
+                                            
+                                            <TouchableOpacity 
+                                                style={styles.smallQtyBtn} 
+                                                onPress={() => handleManualQuantity(item, String((Number(item.quantity) || 0) + 1))}
+                                            >
+                                                <Text style={styles.smallQtyText}>+</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+
+                                </View>
+                            )}
+                            ListEmptyComponent={<Text style={styles.emptyCartText}>No items added yet.</Text>}
+                        />
+                        {cart.length > 0 && (
+                            <View style={styles.sideCartFooter}>
+                                <Text style={styles.sideCartTotalText}>Total: ₹{grandTotal.toFixed(2)}</Text>
+                                <TouchableOpacity 
+                                    style={styles.proceedBtn} 
+                                    onPress={() => {
+                                        setIsCartVisible(false); // Close modal first
+                                        handleProceedClick();    // Then open customer modal
+                                    }}
+                                >
+                                    <Text style={styles.proceedBtnText}>Proceed</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </TouchableOpacity>
-                </View>
-            )}
+                </TouchableOpacity>
+            </Modal>
             <Modal visible={isCustomerModalVisible} animationType="slide" transparent={false}>
                 <CustomerPanel 
                     customers={customers} 

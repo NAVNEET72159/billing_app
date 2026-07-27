@@ -10,7 +10,14 @@ import CustomDropdown from '../components/CustomDropdown';
 export default function UpdateItemModal({ visible, item, onClose, onUpdateSuccess }) {
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
+    const [itemGroups, setItemGroups] = useState([]);
+    const [isGroupModalVisible, setGroupModalVisible] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
     useEffect(() => {
+        if (visible) {
+            fetchGroups();
+        }
         if (item) {
             setFormData({
                 barcode: item.barcode || '',
@@ -25,7 +32,62 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                 unit: item.unit || ''
             });
         }
-    }, [item]); 
+    }, [visible, item]); 
+
+    const fetchGroups = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(`${API_URL}/groups`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const formattedGroups = response.data.map(group => ({
+                id: group.item_group_id,
+                name: group.group_name 
+            }));
+            setItemGroups(formattedGroups);
+        } catch (error) {
+            console.error("Groups Fetch Error:", error.response ? error.response.data : error.message);
+        }
+    };
+
+    const submitNewGroup = async () => {
+        if (!newGroupName.trim()) {
+            Alert.alert("Error", "Please enter a name for the group.");
+            return;
+        }
+
+        setIsSubmittingGroup(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.post(`${API_URL}/item-groups`, 
+                { group_name: newGroupName }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            const newGroupObj = { 
+                name: response.data.group_name, 
+                id: response.data.item_group_id 
+            };
+
+            setItemGroups(prev => [...prev, newGroupObj]);
+            
+            setFormData({ 
+                ...formData, 
+                item_group_id: newGroupObj.id, 
+                item_group_name: newGroupObj.name 
+            });
+            
+            Alert.alert("Success", "Item Group created!");
+            setGroupModalVisible(false);
+            setNewGroupName('');
+        } catch (error) {
+            console.error("Submit Group Error:", error);
+            const errMsg = error.response ? error.response.data.error : "Failed to create group.";
+            Alert.alert("Error", errMsg);
+        } finally {
+            setIsSubmittingGroup(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!item || !item.item_id) {
@@ -100,7 +162,26 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                     <TextInput style={styles.input} value={formData.item_name} onChangeText={(text) => setFormData({...formData, item_name: text})} />
 
                     <Text style={styles.label}>Item Group Name:</Text>
-                    <TextInput style={styles.input} value={formData.item_group_id} onChangeText={(text) => setFormData({...formData, item_group_id: text})} />
+                    {(() => {
+                        const selectedGroup = itemGroups.find(g => g.id == formData.item_group_id || g.name == formData.item_group_name);
+                        const displayGroupName = selectedGroup ? selectedGroup.name : (formData.item_group_name || '');
+
+                        return (
+                            <CustomDropdown
+                                data={itemGroups}
+                                value={displayGroupName}
+                                placeholder="Select an Item Group..."
+                                onSelect={(selectedItem) => {
+                                    setFormData({
+                                        ...formData, 
+                                        item_group_id: selectedItem.id, 
+                                        item_group_name: selectedItem.name 
+                                    });
+                                }}
+                                onCreateNew={() => setGroupModalVisible(true)}
+                            />
+                        );
+                    })()}
 
                     <Text style={styles.label}>GST Percentage</Text>
                     <TextInput style={styles.input} keyboardType="numeric" value={formData.gst_percentage} onChangeText={(text) => setFormData({...formData, gst_percentage: text})} />
@@ -127,7 +208,24 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                     />
                     
                     <Text style={styles.label}>Unit:</Text>
-                    <TextInput style={styles.input} value={formData.unit} onChangeText={(text) => setFormData({...formData, unit: text})} />
+                    <CustomDropdown
+                        data={['Pks', 'Pcs', 'Kg', 'g', 'm', 'cm', 'L', 'ml']}
+                        value={formData.unit}
+                        placeholder="Select a unit..."
+                        onSelect={(selectedItem) => {
+                            setFormData({...formData, unit: selectedItem});
+                        }}
+                        onCreateNew={() => {
+                            if (typeof window !== 'undefined' && window.prompt) {
+                                const customUnit = window.prompt("Enter a new custom unit (e.g., Box, Dozen):");
+                                if (customUnit) {
+                                    setFormData({...formData, unit: customUnit});
+                                }
+                            } else {
+                                Alert.alert("New Unit", "Custom units can be added here.");
+                            }
+                        }}
+                    />
 
                     {/* Form Controls */}
                     <View style={styles.buttonRow}>
@@ -141,6 +239,52 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                     
                 </ScrollView>
             </View>
+            <Modal visible={isGroupModalVisible} animationType="fade" transparent={true}>
+                <View style={styles.groupModalOverlay}>
+                    <View style={styles.groupModalContainer}>
+                        
+                        <Text style={styles.groupModalTitle}>Create Item Group</Text>
+                        
+                        <Text style={styles.groupModalLabelBold}>
+                            Item Group ID: <Text style={{fontWeight: 'normal', color: '#666'}}>(Auto-Generated)</Text>
+                        </Text>
+                        
+                        <Text style={styles.groupModalLabel}>Item Name:</Text>
+                        <TextInput 
+                            style={styles.groupModalInput}
+                            value={newGroupName}
+                            onChangeText={setNewGroupName}
+                            placeholder="e.g., Electronics, Dairy..."
+                            placeholderTextColor="#888"
+                            autoFocus={true}
+                        />
+
+                        <View style={styles.groupModalBtnRow}>
+                            <TouchableOpacity 
+                                style={styles.groupModalCancelBtn}
+                                onPress={() => {
+                                    setGroupModalVisible(false);
+                                    setNewGroupName('');
+                                }}
+                            >
+                                <Text style={styles.groupModalBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={styles.groupModalSubmitBtn}
+                                onPress={submitNewGroup}
+                                disabled={isSubmittingGroup}
+                            >
+                                {isSubmittingGroup ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.groupModalBtnText}>Submit</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </Modal>
     );
 }
