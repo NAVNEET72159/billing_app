@@ -566,3 +566,52 @@ app.get('/reports/monthly-top-items', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch report data" });
     }
 });
+
+// ==========================================
+// 🏭 MANUFACTURING & RAW MATERIALS
+// ==========================================
+app.post('/raw-materials', verifyToken, async (req, res) => {
+    const { item_name, purchase_rate, stock } = req.body;
+    if (!item_name) return res.status(400).json({ error: "Item name is required" });
+
+    try {
+        const query = 'INSERT INTO raw_materials (item_name, purchase_rate, stock) VALUES (?, ?, ?)';
+        const [result] = await db.promise().query(query, [item_name, purchase_rate || 0, stock || 0]);
+        res.status(201).json({ raw_id: result.insertId, message: "Raw material added successfully!" });
+    } catch (error) {
+        console.error("Raw Material Error:", error);
+        res.status(500).json({ error: "Failed to add raw material" });
+    }
+});
+
+app.get('/raw-materials', verifyToken, async (req, res) => {
+    try {
+        const [results] = await db.promise().query('SELECT * FROM raw_materials ORDER BY item_name ASC');
+        res.status(200).json(results);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch raw materials" });
+    }
+});
+
+app.get('/raw-material-logs', verifyToken, async (req, res) => {
+    try {
+        // We JOIN the tables to get the actual item name instead of just the ID
+        const query = `
+            SELECT 
+                l.log_id,
+                r.item_name,
+                l.financial_year,
+                l.month_name,
+                l.stock_start,
+                l.stock_used
+            FROM raw_material_monthly_log l
+            JOIN raw_materials r ON l.raw_id = r.raw_id
+            ORDER BY l.financial_year DESC, l.log_id DESC
+        `;
+        const [results] = await db.promise().query(query);
+        res.status(200).json(results);
+    } catch (error) {
+        console.error("Log Fetch Error:", error);
+        res.status(500).json({ error: "Failed to fetch log book data" });
+    }
+});

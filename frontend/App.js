@@ -13,6 +13,9 @@ import CustomerScreen from './screens/CustomerScreen';
 import BarcodeGeneratorScreen from './screens/BarcodeGeneratorScreen';
 import InvoiceScreen from './screens/InvoicesScreen';
 import ReportScreen from './screens/ReportsScreen';
+import RawMaterialsScreen from './screens/RawMaterialScreen';
+import ProductionReportScreen from './screens/ProductionReportScreen';
+import LogBookScreen from './screens/LogBookScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -102,6 +105,9 @@ export default function App() {
               <Stack.Screen name="Barcode" component={BarcodeGeneratorScreen} />
               <Stack.Screen name='Invoice' component={InvoiceScreen} />
               <Stack.Screen name='Reports' component={ReportScreen} />
+              <Stack.Screen name='RawMaterial' component={RawMaterialsScreen} />
+              <Stack.Screen name='Production' component={ProductionReportScreen} />
+              <Stack.Screen name='LogBook' component={LogBookScreen} />
             </>
           ) : (
             <Stack.Screen name="Login">

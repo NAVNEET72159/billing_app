@@ -20,7 +20,10 @@ export default function DashboardScreen({ navigation }) {
         { id: 3, title: 'Customer', image: require('../assets/images/users.png'), route: 'Customers' },
         { id: 4, title: 'Reports', image: require('../assets/images/report.png'), route: 'Reports' },
         { id: 5, title: 'Barcode Generator', image: require('../assets/images/barcode.png'), route: 'Barcode' },
-        { id: 6, title: 'Invoice Screen', image: require('../assets/images/invoice-bill.png'), route: 'Invoice'}
+        { id: 6, title: 'Invoice Screen', image: require('../assets/images/invoice-bill.png'), route: 'Invoice'},
+        { id: 7, title: 'Raw Material', image: require('../assets/images/raw.png'), route: 'RawMaterial' },
+        { id: 8, title: 'Production', image: require('../assets/images/factory.png'), route: 'Production' },
+        { id: 9, title: 'Log Book', image: require('../assets/images/log-book.png'), route: 'LogBook' }
     ];
     const handleNavigation = (route) => {
         if(route === 'NewBill') {
@@ -35,6 +38,12 @@ export default function DashboardScreen({ navigation }) {
             navigation.navigate(route)
         } else if(route === 'Reports') {
             navigation.navigate('Reports')
+        } else if(route === 'RawMaterial') {
+            navigation.navigate(route)
+        } else if(route === 'Production') {
+            navigation.navigate(route)
+        } else if(route === 'LogBook') {
+            navigation.navigate(route)
         }
     };
     return (
