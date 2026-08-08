@@ -445,7 +445,7 @@ app.post('/upload-image', upload.single('image'), (req, res) => {
     }
     
     // Construct the full URL to send back to the frontend
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const imageUrl = `/uploads/${req.file.filename}`;
     res.status(200).json({ image_url: imageUrl });
 });
 
@@ -698,5 +698,35 @@ app.get('/raw-material-logs', verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Log Fetch Error:", error);
         res.status(500).json({ error: "Failed to fetch log book data" });
+    }
+});
+
+// ==========================================
+// 🏭 RAW MATERIALS: UPDATE & DELETE
+// ==========================================
+
+// 3. Update Raw Material (Name, Rate, or Stock)
+app.put('/raw-materials/:id', verifyToken, async (req, res) => {
+    const { item_name, purchase_rate, stock } = req.body;
+    try {
+        await db.promise().query(
+            'UPDATE raw_materials SET item_name = ?, purchase_rate = ?, stock = ? WHERE raw_id = ?',
+            [item_name, purchase_rate || 0, stock || 0, req.params.id]
+        );
+        res.status(200).json({ message: "Raw material updated successfully!" });
+    } catch (error) {
+        console.error("Update Raw Material Error:", error);
+        res.status(500).json({ error: "Failed to update raw material" });
+    }
+});
+
+// 4. Delete Raw Material
+app.delete('/raw-materials/:id', verifyToken, async (req, res) => {
+    try {
+        await db.promise().query('DELETE FROM raw_materials WHERE raw_id = ?', [req.params.id]);
+        res.status(200).json({ message: "Raw material deleted successfully!" });
+    } catch (error) {
+        console.error("Delete Raw Material Error:", error);
+        res.status(500).json({ error: "Failed to delete raw material" });
     }
 });

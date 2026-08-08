@@ -8,6 +8,7 @@ import SearchBar from '../components/SearchBar';
 import UpdateItemModal from '../components/UpdateItemModal';
 import AddItemModal from '../components/AddItemModal';
 import { API_URL } from '../config/api';
+import { getValidImageUrl } from '../components/utils/ImageHelper';
 
 export default function InventoryScreen({ navigation }) {
     const [inventory, setInventory] = useState([]);
@@ -190,7 +191,7 @@ export default function InventoryScreen({ navigation }) {
                                     <View style={styles.rightColumn}>
                                         <View style={styles.imageContainer}>
                                             {item.image_url ? (
-                                                <Image source={{ uri: item.image_url }} style={styles.itemImage} />
+                                                <Image source={{ uri: getValidImageUrl(item.image_url) }} style={styles.itemImage} />
                                             ) : (
                                                 <View style={styles.placeholderImage}><Text style={{fontSize: 24}}>🖼️</Text></View>
                                             )}

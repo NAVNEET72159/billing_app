@@ -6,6 +6,7 @@ import { styles } from '../styles/UpdateItemModel.styles';
 import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown';
 import * as ImagePicker from 'expo-image-picker';
+import { getValidImageUrl } from '../components/utils/ImageHelper';
 
 export default function UpdateItemModal({ visible, item, onClose, onUpdateSuccess }) {
     const [formData, setFormData] = useState({});
@@ -36,7 +37,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
                 unit: item.unit || ''
             });
             // 🚀 Pre-load the existing image if it exists
-            setImageUri(item.image_url || null);
+            setImageUri(getValidImageUrl(item.image_url));
         }
     }, [visible, item]); 
 

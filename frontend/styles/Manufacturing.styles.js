@@ -95,5 +95,86 @@ export const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         fontFamily: 'Times New Roman',
+    },
+    searchRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        marginBottom: 15,
+        alignItems: 'center',
+    },
+    searchContainer: {
+        flex: 1,
+        marginRight: 15,
+    },
+    newButton: {
+        backgroundColor: '#7DBA45',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    newButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    card: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        borderLeftWidth: 5,
+        borderLeftColor: '#BCAE9B', // Khaki accent from manufacturing styles
+    },
+    cardExpanded: {
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+    },
+    itemName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2c2c4d',
+        marginBottom: 5,
+    },
+    itemDetail: {
+        fontSize: 14,
+        color: '#666',
+    },
+    itemStock: {
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    actionRow: {
+        flexDirection: 'row',
+        backgroundColor: '#f9f9f9',
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderTopWidth: 0,
+        overflow: 'hidden',
+    },
+    updateBtn: {
+        flex: 1,
+        backgroundColor: '#7DBA45',
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    deleteBtn: {
+        flex: 1,
+        backgroundColor: '#DE3931',
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    actionBtnText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
     }
 });

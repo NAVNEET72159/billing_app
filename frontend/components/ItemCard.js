@@ -1,23 +1,21 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import styles from '../styles/ItemCard.styles';
+import { getValidImageUrl } from './utils/ImageHelper';
 
 export default function ItemCard({ item, quantity, onAdd, onRemove }) {
     
-    const getValidImage = (imgProp) => {
+    const resolveImage = (imgProp) => {
         if (!imgProp) return require('../assets/images/image_unavailable.png');
-        if (typeof imgProp === 'string') return { uri: imgProp };
-        return imgProp; // Returns as-is if it's already formatted as { uri: '...' }
+        const validUrl = getValidImageUrl(imgProp);
+        return validUrl ? { uri: validUrl } : require('../assets/images/image_unavailable.png');
     };
 
     return (
         <View style={styles.cardContainer}>
             
             {/* 📸 Safely load the product photo */}
-            <Image 
-                source={getValidImage(item.image_url)} 
-                style={styles.itemImage} 
-            />
+            <Image source={resolveImage(item.image_url)} style={styles.itemImage} />
             
             <View style={styles.detailsContainer}>
                 <Text style={styles.itemName}>{item.name}</Text>
