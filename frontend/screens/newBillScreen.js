@@ -1,4 +1,3 @@
-import BottomNav from '../components/BottomNav';
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
 import axios from 'axios';
@@ -294,9 +293,9 @@ export default function NewBillScreen({ navigation }) {
                                 item={{
                                     name: item.item_name,
                                     description: `Stock: ${item.stock} ${item.unit || ''} | ₹${item.sale_rate}`,
-                                    // Use database images if available, otherwise placeholders
-                                    image_url: item.image_url ? { uri: item.image_url } : null,
-                                    barcode_url: item.barcode_url ? { uri: item.barcode_url } : null
+                                    // 👇 Just pass the raw string from the database
+                                    image_url: item.image_url,
+                                    barcode_url: item.barcode_url 
                                 }} 
                                 quantity={quantityInCart}
                                 onAdd={() => addToCart(item)}
@@ -320,8 +319,6 @@ export default function NewBillScreen({ navigation }) {
                                 <Text style={styles.closeCartIcon}>✖</Text>
                             </TouchableOpacity>
                         </View>
-
-                        <Text style={styles.sideCartTitle}>Cart Items</Text>
                         
                         <FlatList 
                             data={cart}

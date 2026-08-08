@@ -10,6 +10,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// 1. Ensure the 'uploads' directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// 2. Configure Multer Storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        // Creates a unique filename like: item-1692837465.jpg
+        cb(null, 'item-' + Date.now() + path.extname(file.originalname)); 
+    }
+});
+const upload = multer({ storage: storage });
+
+// 3. Serve the uploads folder publicly so the app can load the images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -103,8 +129,10 @@ app.post('/login', (req, res) => {
 app.get('/items', verifyToken, (req, res) => {
     const isArchived = req.query.archived === 'true';
     const query = isArchived
-        ? 'SELECT item_id, barcode, item_name, item_group_id, mrp, sale_rate, stock, gst_percentage FROM ITEM WHERE is_active = FALSE'
-        : 'SELECT item_id, barcode, item_name, item_group_id, mrp, sale_rate, stock, gst_percentage FROM ITEM WHERE is_active = TRUE';
+        ? `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
+           FROM ITEM WHERE is_active = FALSE`
+        : `SELECT item_id, barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url 
+           FROM ITEM WHERE is_active = TRUE`;
     db.query(query, (err, results) => {
         if (err) 
             if (err) return res.status(500).json({ error: err.message });
@@ -208,6 +236,25 @@ app.put('/customer/:id', async (req, res) => {
     }
 });
 
+// 🧾 UTILITY: Calculate Indian FY for Invoices (e.g., returns "2627")
+const getInvoiceFY = () => {
+    const date = new Date();
+    const month = date.getMonth(); // 0 = Jan, 11 = Dec
+    const year = date.getFullYear();
+
+    let startYear, endYear;
+    // Indian FY starts in April (Month Index 3)
+    if (month >= 3) {
+        startYear = year.toString().slice(-2);
+        endYear = (year + 1).toString().slice(-2);
+    } else {
+        startYear = (year - 1).toString().slice(-2);
+        endYear = year.toString().slice(-2);
+    }
+    
+    return `${startYear}${endYear}`; 
+};
+
 // ==========================================
 // 🛒 CHECKOUT ROUTE (Transactions)
 // ==========================================
@@ -220,8 +267,6 @@ app.post('/checkout', verifyToken, (req, res) => {
         payment_method 
     } = req.body;
 
-    const invoice_number = 'INV-' + Date.now();
-
     db.getConnection((err, connection) => {
         if (err) return res.status(500).json({ error: "Database connection failed" });
 
@@ -231,82 +276,108 @@ app.post('/checkout', verifyToken, (req, res) => {
                 return res.status(500).json({ error: "Failed to start transaction" });
             }
 
-            // STEP A: Insert into the SALES table (The Header)
-            const salesQuery = `
-                INSERT INTO SALES (invoice_number, customer_id, total_tax_amount, grand_total, payment_method) 
-                VALUES (?, ?, ?, ?, ?)
-            `;
-            
-            connection.query(salesQuery, [invoice_number, customer_id, total_tax_amount, grand_total, payment_method], (err, salesResult) => {
+            // 🚀 NEW LOGIC: Generate Smart Invoice Number securely inside the transaction
+            const fy = getInvoiceFY();
+            const prefix = `INV-${fy}-`;
+            const lastInvoiceQuery = `SELECT invoice_number FROM SALES WHERE invoice_number LIKE ? ORDER BY invoice_number DESC LIMIT 1`;
+
+            connection.query(lastInvoiceQuery, [`${prefix}%`], (err, existingInvoices) => {
                 if (err) {
                     return connection.rollback(() => {
                         connection.release();
-                        res.status(500).json({ error: "Failed to create sales record." });
+                        res.status(500).json({ error: "Failed to fetch invoice sequence." });
                     });
                 }
 
-                const newSaleId = salesResult.insertId;
+                let newSequence = 1;
+                if (existingInvoices.length > 0) {
+                    const lastInvoice = existingInvoices[0].invoice_number;
+                    const lastSequence = parseInt(lastInvoice.split('-')[2], 10);
+                    newSequence = lastSequence + 1;
+                }
 
-                // STEP B: Insert into the SALES_ITEM table (The Line Items)
-                const salesItemsData = items.map(item => [
-                    newSaleId, 
-                    item.item_id, 
-                    item.sale_rate, 
-                    item.quantity, 
-                    item.tax_amount, 
-                    item.amount
-                ]);
+                const paddedSequence = newSequence.toString().padStart(4, '0');
+                const generatedInvoiceNumber = `${prefix}${paddedSequence}`;
 
-                const itemsQuery = `
-                    INSERT INTO SALES_ITEM (sale_id, item_id, sale_rate, quantity, tax_amount, amount) 
-                    VALUES ?
+                // STEP A: Insert into the SALES table (The Header)
+                const salesQuery = `
+                    INSERT INTO SALES (invoice_number, customer_id, total_tax_amount, grand_total, payment_method) 
+                    VALUES (?, ?, ?, ?, ?)
                 `;
-
-                connection.query(itemsQuery, [salesItemsData], (err, itemsResult) => {
+                
+                connection.query(salesQuery, [generatedInvoiceNumber, customer_id, total_tax_amount, grand_total, payment_method], (err, salesResult) => {
                     if (err) {
                         return connection.rollback(() => {
                             connection.release();
-                            res.status(500).json({ error: "Failed to insert line items." });
+                            res.status(500).json({ error: "Failed to create sales record." });
                         });
                     }
-                    // We use a recursive function to safely loop through the items array using callbacks
-                    const deductInventoryStock = (index) => {
+
+                    const newSaleId = salesResult.insertId;
+
+                    // STEP B: Insert into the SALES_ITEM table (The Line Items)
+                    const salesItemsData = items.map(item => [
+                        newSaleId, 
+                        item.item_id, 
+                        item.sale_rate, 
+                        item.quantity, 
+                        item.tax_amount, 
+                        item.amount
+                    ]);
+
+                    const itemsQuery = `
+                        INSERT INTO SALES_ITEM (sale_id, item_id, sale_rate, quantity, tax_amount, amount) 
+                        VALUES ?
+                    `;
+
+                    connection.query(itemsQuery, [salesItemsData], (err, itemsResult) => {
+                        if (err) {
+                            return connection.rollback(() => {
+                                connection.release();
+                                res.status(500).json({ error: "Failed to insert line items." });
+                            });
+                        }
                         
-                        if (index === items.length) {
-                            connection.commit((err) => {
+                        // We use a recursive function to safely loop through the items array using callbacks
+                        const deductInventoryStock = (index) => {
+                            
+                            if (index === items.length) {
+                                connection.commit((err) => {
+                                    if (err) {
+                                        return connection.rollback(() => {
+                                            connection.release();
+                                            res.status(500).json({ error: "Failed to commit transaction." });
+                                        });
+                                    }
+                                    connection.release();
+                                    
+                                    // 🚀 Ensure the new generated number is sent back to the frontend
+                                    return res.status(201).json({ 
+                                        message: "Checkout successful and inventory updated!", 
+                                        invoice_number: generatedInvoiceNumber,
+                                        sale_id: newSaleId
+                                    });
+                                });
+                                return;
+                            }
+
+                            const currentItem = items[index];
+                            const stockUpdateQuery = `UPDATE ITEM SET stock = stock - ? WHERE item_id = ?`;
+
+                            connection.query(stockUpdateQuery, [currentItem.quantity, currentItem.item_id], (err, result) => {
                                 if (err) {
                                     return connection.rollback(() => {
                                         connection.release();
-                                        res.status(500).json({ error: "Failed to commit transaction." });
+                                        res.status(500).json({ error: `Failed to update stock for item ID ${currentItem.item_id}.` });
                                     });
                                 }
-                                connection.release();
-                                return res.status(201).json({ 
-                                    message: "Checkout successful and inventory updated!", 
-                                    invoice_number: invoice_number,
-                                    sale_id: newSaleId
-                                });
-                            });
-                            return;
-                        }
-
-                        const currentItem = items[index];
-                        const stockUpdateQuery = `UPDATE ITEM SET stock = stock - ? WHERE item_id = ?`;
-
-                        connection.query(stockUpdateQuery, [currentItem.quantity, currentItem.item_id], (err, result) => {
-                            if (err) {
                                 
-                                return connection.rollback(() => {
-                                    connection.release();
-                                    res.status(500).json({ error: `Failed to update stock for item ID ${currentItem.item_id}.` });
-                                });
-                            }
-                            
-                            deductInventoryStock(index + 1);
-                        });
-                    };
-                    
-                    deductInventoryStock(0);
+                                deductInventoryStock(index + 1);
+                            });
+                        };
+                        
+                        deductInventoryStock(0);
+                    });
                 });
             });
         });
@@ -333,23 +404,24 @@ app.delete('/customers/:id', async (req, res) => {
 app.post('/items', async (req, res) => {
     const barcode = req.body.barcode || '';
     const item_name = req.body.item_name || '';
-    const item_group_id = req.body.item_group_name || '';
+    const item_group_id = req.body.item_group_id || '';
     const gst_percentage = parseFloat(req.body.gst_percentage) || 0;
     const mrp = parseFloat(req.body.mrp) || 0;
     const purchase_rate = parseFloat(req.body.purchase_rate) || 0;
     const sale_rate = parseFloat(req.body.sale_rate) || 0;
     const stock = parseInt(req.body.stock) || 0;
     const unit = req.body.unit || '';
+    const image_url = req.body.image_url || null;
 
     try {
         const insertQuery = `
             INSERT INTO item 
-            (barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit, image_url) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             barcode, item_name, item_group_id, gst_percentage, 
-            mrp, purchase_rate, sale_rate, stock, unit
+            mrp, purchase_rate, sale_rate, stock, unit, image_url
         ];
         const [result] = await db.promise().query(insertQuery, values);
 
@@ -362,6 +434,19 @@ app.post('/items', async (req, res) => {
         console.error("Database Insert Item Error:", error);
         res.status(500).json({ error: "Failed to add item to database" });
     }
+});
+
+// ==========================================
+// 📸 IMAGE UPLOAD ROUTE
+// ==========================================
+app.post('/upload-image', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "No image provided" });
+    }
+    
+    // Construct the full URL to send back to the frontend
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.status(200).json({ image_url: imageUrl });
 });
 
 app.delete('/items/:id', verifyToken, async (req, res) => {

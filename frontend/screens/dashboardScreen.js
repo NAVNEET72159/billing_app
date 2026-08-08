@@ -5,8 +5,6 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, useWindowDimensions, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/DashboardScreen.styles';
-import InventoryScreen from './InventoryScreens';
-import CustomerScreen from './CustomerScreen';
 
 export default function DashboardScreen({ navigation }) {
         const { width } = useWindowDimensions();
@@ -26,25 +24,8 @@ export default function DashboardScreen({ navigation }) {
         { id: 9, title: 'Log Book', image: require('../assets/images/log-book.png'), route: 'LogBook' }
     ];
     const handleNavigation = (route) => {
-        if(route === 'NewBill') {
-            navigation.navigate(route);
-        } else  if(route === 'Inventory') {
-            navigation.navigate(route);
-        } else if(route === 'Customers') {
-            navigation.navigate(route)
-        } else if(route === 'Barcode') {
-            navigation.navigate(route)
-        } else if(route === 'Invoice') {
-            navigation.navigate(route)
-        } else if(route === 'Reports') {
-            navigation.navigate('Reports')
-        } else if(route === 'RawMaterial') {
-            navigation.navigate(route)
-        } else if(route === 'Production') {
-            navigation.navigate(route)
-        } else if(route === 'LogBook') {
-            navigation.navigate(route)
-        }
+        // This one line handles every single route dynamically!
+        navigation.navigate(route); 
     };
     return (
         <View style={styles.container} >

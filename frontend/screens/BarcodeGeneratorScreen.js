@@ -53,14 +53,41 @@ export default function BarcodeGeneratorScreen({ navigation }) {
 
     const saveBarcodeLocally = async () => {
         if (!barcode) {
-            Alert.alert("Empty", "Please generate a barcode to save first.");
+            const msg = "Please generate a barcode to save first.";
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Empty", msg);
             return;
         }
 
+        // 🚀 WEB MODE: Capture DOM and trigger browser download
         if (Platform.OS === 'web') {
-            Alert.alert("Web Mode", "Saving directly to the photo gallery is only supported on mobile devices.");
+            try {
+                // Dynamically import html2canvas so it doesn't affect mobile builds
+                const html2canvas = (await import('html2canvas')).default;
+                
+                // barcodeViewRef.current acts as the DOM element in RN Web
+                const canvas = await html2canvas(barcodeViewRef.current, {
+                    backgroundColor: '#ffffff', // Ensures the PNG has a white background
+                    scale: 2, // High resolution
+                });
+                
+                const image = canvas.toDataURL("image/png");
+                
+                // Create a hidden link to trigger the file download
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = `ShanDelay_Barcode_${barcode}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+            } catch (error) {
+                console.error("Web Save Error:", error);
+                window.alert("Failed to save barcode. Please ensure 'html2canvas' is installed.");
+            }
             return;
         }
+
+        // 📱 MOBILE MODE: Save to device photo gallery
         if (!MediaLibrary || !captureRef) {
             Alert.alert("Rebuild Required", "Native modules are missing. Please rebuild the Android app.");
             return;
@@ -83,7 +110,7 @@ export default function BarcodeGeneratorScreen({ navigation }) {
             console.error("Save Image Error:", error);
             Alert.alert("Error", "Failed to save the barcode image.");
         }
-    }
+    };
 
     return (
         <View style={styles.container}>
