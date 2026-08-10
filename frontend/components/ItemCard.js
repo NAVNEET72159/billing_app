@@ -22,10 +22,7 @@ export default function ItemCard({ item, quantity, onAdd, onRemove }) {
                 <Text style={styles.itemDescription}>{item.description}</Text>
                 
                 {/* 📸 Safely load the barcode (if you want to hide the unavailable image when no barcode exists, you can wrap this in a conditional!) */}
-                <Image 
-                    source={getValidImage(item.barcode_url)} 
-                    style={styles.barcodeImage} 
-                />
+                
             </View>
             
             <View style={styles.actionContainer}>

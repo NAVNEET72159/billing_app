@@ -247,9 +247,13 @@ export default function NewBillScreen({ navigation }) {
             setLoading(false);
         }
     };
-    const filteredInventory = inventory.filter(item => 
+    const filteredInventoryText = inventory.filter(item => 
         item.item_name.toLowerCase().includes(itemSearchText.toLowerCase())
     );
+    const filteredInventoryBarcode = inventory.filter(item => 
+        item.barcode && item.barcode.toLowerCase().includes(itemSearchText.toLowerCase())
+    );
+    const filteredInventory = [...new Set([...filteredInventoryText, ...filteredInventoryBarcode])];
     
     return (
         <View style={styles.container}>
@@ -295,7 +299,6 @@ export default function NewBillScreen({ navigation }) {
                                     description: `Stock: ${item.stock} ${item.unit || ''} | ₹${item.sale_rate}`,
                                     // 👇 Just pass the raw string from the database
                                     image_url: item.image_url,
-                                    barcode_url: item.barcode_url 
                                 }} 
                                 quantity={quantityInCart}
                                 onAdd={() => addToCart(item)}

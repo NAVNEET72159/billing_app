@@ -29,13 +29,11 @@ export default function LogBookScreen({ navigation }) {
     };
 
     const renderLogCard = ({ item }) => {
-        // Automatically calculate what was remaining at the end of this specific month
         const balance = item.stock_start - item.stock_used;
+        const displayUnit = item.unit ? ` ${item.unit}` : ''; // 🚀 Safely format the unit
 
         return (
             <View style={styles.logCard}>
-                
-                {/* Header: Item Name & Financial Period */}
                 <View style={styles.cardHeader}>
                     <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
                     <View style={styles.periodBadge}>
@@ -43,24 +41,22 @@ export default function LogBookScreen({ navigation }) {
                     </View>
                 </View>
 
-                {/* Body: The Ledger Stats */}
                 <View style={styles.statsRow}>
                     <View style={styles.statBox}>
                         <Text style={styles.statLabel}>Start Stock</Text>
-                        <Text style={styles.statValue}>{item.stock_start}</Text>
+                        <Text style={styles.statValue}>{item.stock_start}{displayUnit}</Text> 
                     </View>
                     
                     <View style={styles.statBox}>
                         <Text style={styles.statLabel}>Consumed</Text>
-                        <Text style={styles.statValueDanger}>- {item.stock_used}</Text>
+                        <Text style={styles.statValueDanger}>- {item.stock_used}{displayUnit}</Text>
                     </View>
                     
                     <View style={styles.statBox}>
                         <Text style={styles.statLabel}>Est. Balance</Text>
-                        <Text style={[styles.statValue, { color: '#7DBA45' }]}>{balance}</Text>
+                        <Text style={[styles.statValue, { color: '#7DBA45' }]}>{balance.toFixed(2)}{displayUnit}</Text>
                     </View>
                 </View>
-                
             </View>
         );
     };

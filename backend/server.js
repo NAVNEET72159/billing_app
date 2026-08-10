@@ -656,12 +656,12 @@ app.get('/reports/monthly-top-items', verifyToken, async (req, res) => {
 // 🏭 MANUFACTURING & RAW MATERIALS
 // ==========================================
 app.post('/raw-materials', verifyToken, async (req, res) => {
-    const { item_name, purchase_rate, stock } = req.body;
+    const { item_name, purchase_rate, stock, unit } = req.body;
     if (!item_name) return res.status(400).json({ error: "Item name is required" });
 
     try {
-        const query = 'INSERT INTO raw_materials (item_name, purchase_rate, stock) VALUES (?, ?, ?)';
-        const [result] = await db.promise().query(query, [item_name, purchase_rate || 0, stock || 0]);
+        const query = 'INSERT INTO raw_materials (item_name, purchase_rate, stock, unit) VALUES (?, ?, ?, ?)';
+        const [result] = await db.promise().query(query, [item_name, purchase_rate || 0, stock || 0, unit || '']);
         res.status(201).json({ raw_id: result.insertId, message: "Raw material added successfully!" });
     } catch (error) {
         console.error("Raw Material Error:", error);
@@ -678,26 +678,22 @@ app.get('/raw-materials', verifyToken, async (req, res) => {
     }
 });
 
+// ==========================================
+// 🏭 1. RAW MATERIAL LEDGER (WITH UNIT)
+// ==========================================
 app.get('/raw-material-logs', verifyToken, async (req, res) => {
     try {
-        // We JOIN the tables to get the actual item name instead of just the ID
+        // 🚀 FIXED: Join with raw_materials to grab the 'unit' column
         const query = `
-            SELECT 
-                l.log_id,
-                r.item_name,
-                l.financial_year,
-                l.month_name,
-                l.stock_start,
-                l.stock_used
+            SELECT l.*, r.item_name, r.unit 
             FROM raw_material_monthly_log l
             JOIN raw_materials r ON l.raw_id = r.raw_id
-            ORDER BY l.financial_year DESC, l.log_id DESC
+            ORDER BY l.financial_year DESC, l.month_name DESC
         `;
         const [results] = await db.promise().query(query);
         res.status(200).json(results);
     } catch (error) {
-        console.error("Log Fetch Error:", error);
-        res.status(500).json({ error: "Failed to fetch log book data" });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -707,11 +703,11 @@ app.get('/raw-material-logs', verifyToken, async (req, res) => {
 
 // 3. Update Raw Material (Name, Rate, or Stock)
 app.put('/raw-materials/:id', verifyToken, async (req, res) => {
-    const { item_name, purchase_rate, stock } = req.body;
+    const { item_name, purchase_rate, stock, unit } = req.body;
     try {
         await db.promise().query(
-            'UPDATE raw_materials SET item_name = ?, purchase_rate = ?, stock = ? WHERE raw_id = ?',
-            [item_name, purchase_rate || 0, stock || 0, req.params.id]
+            'UPDATE raw_materials SET item_name = ?, purchase_rate = ?, stock = ?, unit = ? WHERE raw_id = ?',
+            [item_name, purchase_rate || 0, stock || 0, unit || ' ', req.params.id]
         );
         res.status(200).json({ message: "Raw material updated successfully!" });
     } catch (error) {
@@ -728,5 +724,98 @@ app.delete('/raw-materials/:id', verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Delete Raw Material Error:", error);
         res.status(500).json({ error: "Failed to delete raw material" });
+    }
+});
+
+// ==========================================
+// 🏭 SAVE PRODUCTION & UPDATE FY LEDGER (MULTI-ITEM)
+// ==========================================
+app.post('/production', verifyToken, async (req, res) => {
+    const barcode = req.body.barcode || '';
+    const item_name = req.body.item_name || '';
+    const item_group_id = req.body.item_group_id ? parseInt(req.body.item_group_id) : null;
+    const gst_percentage = parseFloat(req.body.gst_percentage) || 0;
+    const mrp = parseFloat(req.body.mrp) || 0;
+    const purchase_rate = parseFloat(req.body.purchase_rate) || 0;
+    const sale_rate = parseFloat(req.body.sale_rate) || 0;
+    const units_produced = parseInt(req.body.units_produced) || 1;
+    const unit = req.body.unit || '';
+    const used_materials = req.body.used_materials || [];
+
+    try {
+        await db.promise().query('START TRANSACTION');
+
+        const insertItemQuery = `
+            INSERT INTO item (barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        await db.promise().query(insertItemQuery, [
+            barcode, item_name, item_group_id, gst_percentage, 
+            mrp, purchase_rate, sale_rate, units_produced, unit
+        ]);
+
+        // 🚀 NEW: Log this specific production run for your history tab
+        await db.promise().query(
+            'INSERT INTO production_logs (item_name, units_produced, unit) VALUES (?, ?, ?)',
+            [item_name, units_produced, unit]
+        );
+
+        const date = new Date();
+        const month_name = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        const financial_year = date.getMonth() >= 3 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+
+        for (const material of used_materials) {
+            const [rawCheck] = await db.promise().query('SELECT stock, unit FROM raw_materials WHERE raw_id = ?', [material.id]);
+            if (rawCheck.length === 0) throw new Error(`Raw material ${material.name} not found in database.`);
+            
+            const currentRawStock = parseFloat(rawCheck[0].stock);
+            const dbUnit = (rawCheck[0].unit || '').toLowerCase();
+            const recipeUnit = (material.unit || '').toLowerCase();
+            
+            let deductionQty = parseFloat(material.qty);
+
+            if (dbUnit === 'kg' && recipeUnit === 'g') deductionQty = deductionQty / 1000;
+            else if (dbUnit === 'g' && recipeUnit === 'kg') deductionQty = deductionQty * 1000;
+            else if (dbUnit === 'l' && recipeUnit === 'ml') deductionQty = deductionQty / 1000;
+            else if (dbUnit === 'ml' && recipeUnit === 'l') deductionQty = deductionQty * 1000;
+            else if (dbUnit === 'm' && recipeUnit === 'cm') deductionQty = deductionQty / 100;
+            else if (dbUnit === 'cm' && recipeUnit === 'm') deductionQty = deductionQty * 100;
+
+            if (currentRawStock < deductionQty) {
+                throw new Error(`Not enough ${material.name}! You need ${deductionQty} ${rawCheck[0].unit || 'units'}, but only have ${currentRawStock} left.`);
+            }
+
+            await db.promise().query('UPDATE raw_materials SET stock = stock - ? WHERE raw_id = ?', [deductionQty, material.id]);
+
+            const ledgerQuery = `
+                INSERT INTO raw_material_monthly_log (raw_id, financial_year, month_name, stock_start, stock_used) 
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE stock_used = stock_used + ?
+            `;
+            await db.promise().query(ledgerQuery, [
+                material.id, financial_year, month_name, currentRawStock, deductionQty, deductionQty
+            ]);
+        }
+
+        await db.promise().query('COMMIT');
+        res.status(201).json({ message: "Production recorded and ledgers updated!" });
+
+    } catch (error) {
+        await db.promise().query('ROLLBACK');
+        console.error("Production Error:", error);
+        res.status(400).json({ error: error.message || "Failed to process production." });
+    }
+});
+
+// ==========================================
+// 🏭 3. GET PRODUCTION HISTORY
+// ==========================================
+app.get('/production-logs', verifyToken, async (req, res) => {
+    try {
+        const [results] = await db.promise().query('SELECT * FROM production_logs ORDER BY production_date DESC');
+        res.status(200).json(results);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
