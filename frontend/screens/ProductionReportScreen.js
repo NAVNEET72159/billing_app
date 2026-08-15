@@ -7,7 +7,6 @@ import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown';
 
 export default function ProductionReportScreen({ navigation }) {
-    // 🚀 NEW: Tab State
     const [activeTab, setActiveTab] = useState('New'); // 'New' or 'History'
 
     const [rawMaterials, setRawMaterials] = useState([]);
@@ -26,7 +25,7 @@ export default function ProductionReportScreen({ navigation }) {
     const [rawUnitUsed, setRawUnitUsed] = useState('');
     const [usedMaterialsList, setUsedMaterialsList] = useState([]);
 
-    // 🚀 NEW: History States
+    // History States
     const [productionHistory, setProductionHistory] = useState([]);
     const [filterDate, setFilterDate] = useState('');
 
@@ -47,7 +46,6 @@ export default function ProductionReportScreen({ navigation }) {
         }
     };
 
-    // 🚀 NEW: Fetch History from Backend
     const fetchHistory = async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
@@ -61,6 +59,47 @@ export default function ProductionReportScreen({ navigation }) {
     const generateBarcode = () => {
         const newBarcode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
         setFormData({ ...formData, barcode: newBarcode });
+    };
+
+    // 🚀 NEW: Fetch Existing Recipe & Product Specs
+    const fetchItemDetails = async () => {
+        if (!formData.barcode) {
+            Alert.alert("Missing Barcode", "Please enter a barcode to search for an existing product.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(`${API_URL}/production/recipe/${formData.barcode}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const { item, recipe } = response.data;
+            
+            // Auto-fill the group dropdown name
+            const matchedGroup = itemGroups.find(g => String(g.id) === String(item.item_group_id));
+
+            setFormData({
+                ...formData,
+                item_name: item.item_name || '',
+                item_group_id: item.item_group_id || '',
+                item_group_name: matchedGroup ? matchedGroup.name : '',
+                gst_percentage: String(item.gst_percentage || ''),
+                mrp: String(item.mrp || ''),
+                purchase_rate: String(item.purchase_rate || ''),
+                sale_rate: String(item.sale_rate || ''),
+                unit: item.unit || '',
+                units_produced: '1' // Reset to 1 for the new batch
+            });
+
+            setUsedMaterialsList(recipe || []);
+            Platform.OS === 'web' ? window.alert("Recipe Loaded!") : Alert.alert("Success", "Recipe Loaded!");
+        } catch (error) {
+            const msg = "No existing product or recipe found with this barcode.";
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Not Found", msg);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleAddMaterialToRecipe = () => {
@@ -110,8 +149,7 @@ export default function ProductionReportScreen({ navigation }) {
 
             Alert.alert("Success", "Production saved and ledger updated!");
             
-            // 🚀 Reset form and reload history
-            setFormData({ barcode: '', item_name: '', item_group_id: '', item_group_name: '', gst_percentage: '', mrp: '', purchase_rate: '', sale_rate: '', units_produced: '', unit: '' });
+            setFormData({ barcode: '', item_name: '', item_group_id: '', item_group_name: '', gst_percentage: '', mrp: '', purchase_rate: '', sale_rate: '', units_produced: '1', unit: '' });
             setUsedMaterialsList([]);
             fetchDependencies();
             fetchHistory();
@@ -126,10 +164,8 @@ export default function ProductionReportScreen({ navigation }) {
         }
     };
 
-    // 🚀 NEW: Filter logic for the History Tab
     const filteredHistory = productionHistory.filter(log => {
         if (!filterDate) return true;
-        // production_date comes in as an ISO string (e.g. "2026-08-09T...")
         return log.production_date && log.production_date.startsWith(filterDate);
     });
 
@@ -148,7 +184,6 @@ export default function ProductionReportScreen({ navigation }) {
                 <Text style={styles.title}>Production</Text>
             </View>
 
-            {/* 🚀 NEW: Tab Navigation */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity 
                     style={[styles.tab, activeTab === 'New' && styles.activeTab]} 
@@ -164,9 +199,6 @@ export default function ProductionReportScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
-            {/* ========================================= */}
-            {/* NEW BATCH TAB */}
-            {/* ========================================= */}
             {activeTab === 'New' && (
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     
@@ -177,12 +209,18 @@ export default function ProductionReportScreen({ navigation }) {
                     <Text style={styles.label}>Item Barcode:</Text>
                     <TextInput style={styles.input} value={formData.barcode} onChangeText={(t) => setFormData({...formData, barcode: t})} />
 
-                    <TouchableOpacity style={styles.generateBtn} onPress={generateBarcode}>
-                        <Text style={styles.generateBtnText}>Generate Barcode</Text>
-                    </TouchableOpacity>
+                    {/* 🚀 NEW: Side-by-side Generate & Fetch Buttons */}
+                    <View style={{flexDirection: 'row', gap: 10, marginBottom: 15}}>
+                        <TouchableOpacity style={[styles.generateBtn, {flex: 1, marginTop: 0}]} onPress={generateBarcode}>
+                            <Text style={styles.generateBtnText}>Generate New</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.generateBtn, {flex: 1, marginTop: 0, backgroundColor: '#1565c0'}]} onPress={fetchItemDetails}>
+                            <Text style={styles.generateBtnText}>Fetch Existing</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     <Text style={styles.label}>Item Name (Output):</Text>
-                    <TextInput style={styles.input} placeholder="e.g. Masala Paste 500g" value={formData.item_name} onChangeText={(t) => setFormData({...formData, item_name: t})} />
+                    <TextInput style={styles.input} placeholder="e.g. Masala Paste" value={formData.item_name} onChangeText={(t) => setFormData({...formData, item_name: t})} />
 
                     <Text style={styles.label}>Item Group Name:</Text>
                     <CustomDropdown
@@ -240,7 +278,7 @@ export default function ProductionReportScreen({ navigation }) {
                         <CustomDropdown
                             data={rawMaterials}
                             value={selectedRawMaterial ? selectedRawMaterial.name : ''}
-                            placeholder="e.g. Cardamom, Thread, Mirrors..."
+                            placeholder="e.g. Cardamom, Thread..."
                             onSelect={(item) => {
                                 setSelectedRawMaterial(item);
                                 setRawUnitUsed(item.unit || ''); 
@@ -305,9 +343,7 @@ export default function ProductionReportScreen({ navigation }) {
                 </ScrollView>
             )}
 
-            {/* ========================================= */}
             {/* HISTORY TAB */}
-            {/* ========================================= */}
             {activeTab === 'History' && (
                 <View style={{ flex: 1, paddingHorizontal: 20 }}>
                     <View style={styles.dateFilterContainer}>

@@ -151,5 +151,83 @@ export const styles = StyleSheet.create({
     itemText: { 
         fontSize: 14, 
         color: '#444' 
+    },
+    itemRow: {
+        flexDirection: 'row',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        alignItems: 'center',
+    },
+    returnItemBtn: {
+        flex: 1,
+        backgroundColor: '#e53935', // Red warning color for returns
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 6,
+        alignItems: 'center',
+    },
+    returnItemText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    returnOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    returnContainer: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 15,
+        width: '100%',
+        maxWidth: 400,
+    },
+    returnTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#2c2c4d',
+        marginBottom: 10,
+    },
+    returnSub: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 15,
+    },
+    returnInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 18,
+        textAlign: 'center',
+        marginBottom: 20,
+        fontWeight: 'bold',
+    },
+    returnBtnRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    returnCancelBtn: {
+        flex: 1,
+        backgroundColor: '#999',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    returnConfirmBtn: {
+        flex: 1,
+        backgroundColor: '#e53935',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    returnBtnText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
     }
 });

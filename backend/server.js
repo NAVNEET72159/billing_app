@@ -745,20 +745,34 @@ app.post('/production', verifyToken, async (req, res) => {
     try {
         await db.promise().query('START TRANSACTION');
 
+        // 🚀 FIXED: Use ON DUPLICATE KEY UPDATE to add stock to an existing item instead of crashing
         const insertItemQuery = `
             INSERT INTO item (barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+                stock = stock + VALUES(stock),
+                mrp = VALUES(mrp),
+                purchase_rate = VALUES(purchase_rate),
+                sale_rate = VALUES(sale_rate)
         `;
         await db.promise().query(insertItemQuery, [
             barcode, item_name, item_group_id, gst_percentage, 
             mrp, purchase_rate, sale_rate, units_produced, unit
         ]);
 
-        // 🚀 NEW: Log this specific production run for your history tab
         await db.promise().query(
             'INSERT INTO production_logs (item_name, units_produced, unit) VALUES (?, ?, ?)',
             [item_name, units_produced, unit]
         );
+
+        // 🚀 NEW: Save this recipe for future use
+        await db.promise().query('DELETE FROM item_recipe WHERE barcode = ?', [barcode]);
+        for (const mat of used_materials) {
+            await db.promise().query(
+                'INSERT INTO item_recipe (barcode, raw_id, qty, unit) VALUES (?, ?, ?, ?)', 
+                [barcode, mat.id, mat.qty, mat.unit]
+            );
+        }
 
         const date = new Date();
         const month_name = date.toLocaleString('default', { month: 'long' });
@@ -767,12 +781,11 @@ app.post('/production', verifyToken, async (req, res) => {
 
         for (const material of used_materials) {
             const [rawCheck] = await db.promise().query('SELECT stock, unit FROM raw_materials WHERE raw_id = ?', [material.id]);
-            if (rawCheck.length === 0) throw new Error(`Raw material ${material.name} not found in database.`);
+            if (rawCheck.length === 0) throw new Error(`Raw material ${material.name} not found.`);
             
             const currentRawStock = parseFloat(rawCheck[0].stock);
             const dbUnit = (rawCheck[0].unit || '').toLowerCase();
             const recipeUnit = (material.unit || '').toLowerCase();
-            
             let deductionQty = parseFloat(material.qty);
 
             if (dbUnit === 'kg' && recipeUnit === 'g') deductionQty = deductionQty / 1000;
@@ -817,5 +830,132 @@ app.get('/production-logs', verifyToken, async (req, res) => {
         res.status(200).json(results);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// 🏭 4. FETCH EXISTING RECIPE BY BARCODE
+// ==========================================
+app.get('/production/recipe/:barcode', verifyToken, async (req, res) => {
+    try {
+        const [items] = await db.promise().query('SELECT * FROM item WHERE barcode = ? LIMIT 1', [req.params.barcode]);
+        if (items.length === 0) return res.status(404).json({ message: "Item not found" });
+        
+        const [recipe] = await db.promise().query(`
+            SELECT ir.raw_id as id, rm.item_name as name, ir.qty, ir.unit 
+            FROM item_recipe ir 
+            JOIN raw_materials rm ON ir.raw_id = rm.raw_id 
+            WHERE ir.barcode = ?
+        `, [req.params.barcode]);
+
+        res.status(200).json({ item: items[0], recipe });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// 🧾 RETURN / PARTIALLY REFUND AN INVOICE ITEM
+// ==========================================
+app.post('/invoices/:sale_id/return-item', verifyToken, async (req, res) => {
+    const sale_id = req.params.sale_id;
+    const { item_id, return_quantity } = req.body;
+
+    try {
+        await db.promise().query('START TRANSACTION');
+
+        // 1. Fetch the specific item from the invoice
+        const [saleItems] = await db.promise().query(
+            'SELECT * FROM sale_items WHERE sale_id = ? AND item_id = ?', 
+            [sale_id, item_id]
+        );
+
+        if (saleItems.length === 0) {
+            throw new Error("Item not found in this invoice.");
+        }
+
+        const saleItem = saleItems[0];
+        const returnQty = parseInt(return_quantity);
+
+        if (returnQty > saleItem.quantity || returnQty <= 0) {
+            throw new Error("Invalid return quantity.");
+        }
+
+        // 2. Calculate the financial deductions
+        const deductionAmount = saleItem.sale_rate * returnQty;
+        const deductionTax = (saleItem.tax_amount / saleItem.quantity) * returnQty; 
+
+        // 3. Update or delete the item from the invoice
+        if (returnQty === saleItem.quantity) {
+            // Full return of this specific item
+            await db.promise().query('DELETE FROM sale_items WHERE sale_id = ? AND item_id = ?', [sale_id, item_id]);
+        } else {
+            // Partial return of this specific item
+            await db.promise().query(
+                'UPDATE sale_items SET quantity = quantity - ?, amount = amount - ?, tax_amount = tax_amount - ? WHERE sale_id = ? AND item_id = ?',
+                [returnQty, deductionAmount, deductionTax, sale_id, item_id]
+            );
+        }
+
+        // 4. Adjust the main Invoice totals
+        await db.promise().query(
+            'UPDATE sales SET grand_total = grand_total - ?, total_tax_amount = total_tax_amount - ? WHERE sale_id = ?',
+            [deductionAmount, deductionTax, sale_id] 
+        );
+
+        const [updateResult] = await db.promise().query(
+            'UPDATE item SET stock = stock + ? WHERE item_id = ?', 
+            [returnQty, item_id]
+        );
+
+        if (updateResult.affectedRows === 0) {
+             throw new Error(`Failed to update stock. Item ID ${item_id} might not exist in the item table.`);
+        }
+
+        await db.promise().query('COMMIT');
+        res.status(200).json({ message: "Item returned successfully and inventory restocked!" });
+    } catch (error) {
+        await db.promise().query('ROLLBACK');
+        console.error("Return Item Error:", error);
+        res.status(400).json({ error: error.message || "Failed to process return." });
+    }
+});
+
+// ==========================================
+// 🧾 2. DELETE ENTIRE INVOICE & RESTOCK ALL
+// ==========================================
+app.delete('/invoices/:sale_id', verifyToken, async (req, res) => {
+    const sale_id = req.params.sale_id;
+    
+    try {
+        await db.promise().query('START TRANSACTION');
+
+        // 🚀 1. THE FIX: Fetch ALL items from this invoice BEFORE deleting it
+        const [itemsToRestock] = await db.promise().query(
+            'SELECT item_id, quantity FROM sale_items WHERE sale_id = ?', 
+            [sale_id]
+        );
+
+        // 🚀 2. Loop through and restock each item in your main inventory
+        for (let item of itemsToRestock) {
+            await db.promise().query(
+                'UPDATE item SET stock = stock + ? WHERE item_id = ?',
+                [item.quantity, item.item_id]
+            );
+        }
+
+        // 3. Delete the invoice items and the main invoice
+        await db.promise().query('DELETE FROM sale_items WHERE sale_id = ?', [sale_id]);
+        await db.promise().query('DELETE FROM sales WHERE sale_id = ?', [sale_id]);
+
+        // Save everything
+        await db.promise().query('COMMIT');
+        res.status(200).json({ message: "Invoice deleted and all items restocked successfully!" });
+
+    } catch (error) {
+        // Undo if something crashed
+        await db.promise().query('ROLLBACK');
+        console.error("Delete Invoice Error:", error);
+        res.status(500).json({ error: "Failed to delete invoice and restock items." });
     }
 });
