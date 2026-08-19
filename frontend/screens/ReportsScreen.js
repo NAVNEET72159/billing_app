@@ -1,167 +1,237 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Dimensions, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BarChart, PieChart, StackedBarChart } from 'react-native-chart-kit';
-import { styles, chartColors } from '../styles/ReportScreen.styles';
+import * as Print from 'expo-print';
+import { styles } from '../styles/ReportScreen.styles';
 import { API_URL } from '../config/api';
 
-const screenWidth = Dimensions.get('window').width - 40;
+export default function ReportsScreen({ navigation }) {
+    const [activeTab, setActiveTab] = useState('Stock');
+    const [stockItems, setStockItems] = useState([]);
+    const [topSales, setTopSales] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-export default function ReportScreen({ navigation }) {
-    const [reportData, setReportData] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [selectedChartType, setSelectedChartType] = useState(null);
-    
     useEffect(() => {
-        fetchReportData();
-    }, []);
+        if (activeTab === 'Stock') {
+            fetchStockItems();
+        } else {
+            fetchTopSales();
+        }
+    }, [activeTab]);
 
-    const fetchReportData = async () => {
+    // ==========================================
+    // 📦 FETCH LIVE STOCK
+    // ==========================================
+    const fetchStockItems = async () => {
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            // Fetch only active items for the report
+            const response = await axios.get(`${API_URL}/items?archived=false`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setStockItems(response.data);
+        } catch (error) {
+            console.error("Stock Fetch Error:", error);
+            Alert.alert("Error", "Failed to load stock data.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ==========================================
+    // 📈 FETCH TOP SALES
+    // ==========================================
+    const fetchTopSales = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
             const response = await axios.get(`${API_URL}/reports/monthly-top-items`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setReportData(response.data);
+            setTopSales(response.data);
         } catch (error) {
-            console.error("Error fetching reports:", error);
-            if (Platform.OS !== 'web') Alert.alert("Error", "Could not load report data.");
+            console.error("Sales Fetch Error:", error);
+            Alert.alert("Error", "Failed to load sales data.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSelectOption = (type) => {
-        setSelectedChartType(type);
-        setIsDropdownOpen(false);
-    };
+    // ==========================================
+    // 🖨️ PRINT STOCK REPORT LOGIC
+    // ==========================================
+    const handlePrintStockReport = async () => {
+        if (stockItems.length === 0) return;
 
-    const getBarData = () => {
-        return {
-            labels: reportData.map(d => d.month),
-            datasets: [{
-                data: reportData.map(d => d.totalSold),
-                colors: reportData.map((_, index) => () => chartColors[index % chartColors.length])
-            }]
-        };
-    };
+        const htmlContent = `
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
+                    .header { text-align: center; border-bottom: 2px solid #7DBA45; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header h1 { margin: 0; color: #2c2c4d; text-transform: uppercase; letter-spacing: 2px; }
+                    .header h3 { margin: 5px 0 0 0; color: #666; }
+                    .timestamp { text-align: right; font-size: 12px; color: #888; margin-bottom: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+                    th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
+                    th { background-color: #f4f4f4; color: #2c2c4d; font-weight: bold; }
+                    .center-align { text-align: center; }
+                    .right-align { text-align: right; }
+                    .low-stock { color: #DE3931; font-weight: bold; }
+                    .good-stock { color: #7DBA45; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>ShanDelay Enterprises</h1>
+                    <h3>All Item Stock Report</h3>
+                </div>
+                
+                <div class="timestamp">
+                    Generated on: ${new Date().toLocaleString()}
+                </div>
 
-    const getPieData = () => {
-        return reportData.map((d, index) => ({
-            name: d.itemName,
-            population: d.totalSold,
-            color: chartColors[index % chartColors.length],
-            legendFontColor: "#333",
-            legendFontSize: 12
-        }));
-    };
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">S.No</th>
+                            <th style="width: 20%;">Barcode</th>
+                            <th style="width: 45%;">Item Description</th>
+                            <th class="right-align" style="width: 15%;">Sale Rate (₹)</th>
+                            <th class="center-align" style="width: 15%;">Current Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stockItems.map((item, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${item.barcode || 'N/A'}</td>
+                                <td>${item.item_name}</td>
+                                <td class="right-align">${parseFloat(item.sale_rate || 0).toFixed(2)}</td>
+                                <td class="center-align ${item.stock <= 10 ? 'low-stock' : 'good-stock'}">
+                                    ${item.stock} ${item.unit || ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
 
-    const getStackedData = () => {
-        return {
-            labels: reportData.map(d => d.month),
-            legend: ["Sold"],
-            data: reportData.map(d => [d.totalSold]),
-            barColors: [chartColors[0]]
-        };
-    };
-
-    const chartConfig = {
-        backgroundGradientFrom: "#fff",
-        backgroundGradientTo: "#fff",
-        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        barPercentage: 0.8,
-        decimalPlaces: 0,
-        propsForBackgroundLines: { strokeWidth: 1, stroke: '#e3e3e3', strokeDasharray: '' },
+        try {
+            if (Platform.OS === 'web') {
+                const printWindow = window.open('', '_blank', 'width=800,height=800');
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            } else {
+                await Print.printAsync({ html: htmlContent });
+            }
+        } catch (error) {
+            console.error("Print Error:", error);
+            Alert.alert("Error", "Could not generate the print document.");
+        }
     };
 
     return (
         <View style={styles.container}>
-            {/* Header matching the design */}
             <View style={styles.headerRow}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Text style={styles.backArrow}>‹</Text>
                 </TouchableOpacity>
+                <Text style={styles.title}>Reports</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.title}>Sale Report</Text>
-                <Text style={styles.subtitle}>Generate Report Option</Text>
-
+            {/* TAB NAVIGATION */}
+            <View style={styles.tabContainer}>
                 <TouchableOpacity 
-                    style={styles.dropdownBtn} 
-                    activeOpacity={0.8}
-                    onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+                    style={[styles.tab, activeTab === 'Stock' && styles.activeTab]} 
+                    onPress={() => setActiveTab('Stock')}
                 >
-                    <Text style={styles.dropdownText}>
-                        {selectedChartType ? `Chart: ${selectedChartType}` : "Select Chart Type..."}
-                    </Text>
+                    <Text style={[styles.tabText, activeTab === 'Stock' && styles.activeTabText]}>Live Stock</Text>
                 </TouchableOpacity>
-                {isDropdownOpen && (
-                    <View style={styles.dropdownMenu}>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={() => handleSelectOption('Categorical Chart')}>
-                            <Text style={styles.dropdownItemText}>Categorical Chart (Bar)</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={() => handleSelectOption('Pie Chart')}>
-                            <Text style={styles.dropdownItemText}>Pie Chart</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={() => handleSelectOption('Stacked Chart')}>
-                            <Text style={styles.dropdownItemText}>Stacked Chart</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-                {loading && <ActivityIndicator size="large" color="#4a7bfa" style={{marginTop: 50}}/>}
+                <TouchableOpacity 
+                    style={[styles.tab, activeTab === 'Sales' && styles.activeTab]} 
+                    onPress={() => setActiveTab('Sales')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'Sales' && styles.activeTabText]}>Top Sales</Text>
+                </TouchableOpacity>
+            </View>
 
-                {/* Chart Rendering (Initially empty unless an option is selected) */}
-                {!loading && selectedChartType && reportData.length > 0 && (
-                    <View style={styles.chartContainer}>
-                        
-                        {selectedChartType === 'Categorical Chart' && (
-                            <BarChart
-                                data={getBarData()}
-                                width={screenWidth}
-                                height={280}
-                                yAxisLabel=""
-                                chartConfig={chartConfig}
-                                withCustomBarColorFromData={true}
-                                flatColor={true}
-                                showValuesOnTopOfBars={true}
+            {loading ? (
+                <ActivityIndicator size="large" color="#7DBA45" style={{ marginTop: 50 }} />
+            ) : (
+                <View style={{ flex: 1 }}>
+                    {/* ========================================= */}
+                    {/* STOCK TAB UI */}
+                    {/* ========================================= */}
+                    {activeTab === 'Stock' && (
+                        <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                            <View style={styles.actionRow}>
+                                <Text style={styles.sectionSubtitle}>Total Items: {stockItems.length}</Text>
+                                <TouchableOpacity style={styles.printBtn} onPress={handlePrintStockReport}>
+                                    <Text style={styles.printBtnText}>🖨️ Print Report</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <FlatList 
+                                data={stockItems}
+                                keyExtractor={(item) => item.item_id.toString()}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: 50 }}
+                                renderItem={({ item }) => (
+                                    <View style={styles.card}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+                                            <Text style={styles.itemDetail}>Barcode: {item.barcode || 'N/A'}</Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                                            <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#7DBA45' }]}>
+                                                {item.stock} {item.unit || ''}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                )}
+                                ListEmptyComponent={<Text style={styles.emptyText}>No items found in inventory.</Text>}
                             />
-                        )}
+                        </View>
+                    )}
 
-                        {selectedChartType === 'Pie Chart' && (
-                            <PieChart
-                                data={getPieData()}
-                                width={screenWidth}
-                                height={220}
-                                chartConfig={chartConfig}
-                                accessor={"population"}
-                                backgroundColor={"transparent"}
-                                paddingLeft={"15"}
-                                absolute
+                    {/* ========================================= */}
+                    {/* SALES TAB UI */}
+                    {/* ========================================= */}
+                    {activeTab === 'Sales' && (
+                        <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                            <Text style={[styles.sectionSubtitle, { marginBottom: 15 }]}>Highest Selling Products by Month</Text>
+                            <FlatList 
+                                data={topSales}
+                                keyExtractor={(item, index) => index.toString()}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: 50 }}
+                                renderItem={({ item }) => (
+                                    <View style={styles.card}>
+                                        <View style={styles.monthBadge}>
+                                            <Text style={styles.monthText}>{item.month}</Text>
+                                        </View>
+                                        <View style={{ flex: 1, marginLeft: 15 }}>
+                                            <Text style={styles.itemName} numberOfLines={1}>{item.itemName}</Text>
+                                            <Text style={styles.itemDetail}>Units Sold: <Text style={{fontWeight: 'bold', color: '#2c2c4d'}}>{item.totalSold}</Text></Text>
+                                        </View>
+                                    </View>
+                                )}
+                                ListEmptyComponent={<Text style={styles.emptyText}>No sales data available yet.</Text>}
                             />
-                        )}
-
-                        {selectedChartType === 'Stacked Chart' && (
-                            <StackedBarChart
-                                data={getStackedData()}
-                                width={screenWidth}
-                                height={280}
-                                chartConfig={chartConfig}
-                                hideLegend={false}
-                            />
-                        )}
-                        
-                    </View>
-                )}
-
-                {!loading && selectedChartType && reportData.length === 0 && (
-                    <Text style={{textAlign: 'center', marginTop: 20, color: '#666'}}>No sales data available to chart.</Text>
-                )}
-
-            </ScrollView>
+                        </View>
+                    )}
+                </View>
+            )}
         </View>
     );
 }

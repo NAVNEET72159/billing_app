@@ -526,6 +526,7 @@ app.get('/groups', verifyToken, async (req, res) => {
 // 🧾 INVOICE & RESTOCKING ROUTES 
 // ==========================================
 
+// 1. Fetch all Invoices for the main screen
 app.get('/invoices', verifyToken, async (req, res) => {
     try {
         const query = `
@@ -575,7 +576,7 @@ app.get('/invoices/:id/items', verifyToken, async (req, res) => {
     const saleId = req.params.id;
     try {
         const query = `
-            SELECT si.quantity, si.sale_rate, si.tax_amount, si.amount, i.item_name, i.barcode 
+            SELECT si.item_id, si.quantity, si.sale_rate, si.tax_amount, si.amount, i.item_name, i.barcode 
             FROM SALES_ITEM si
             LEFT JOIN ITEM i ON si.item_id = i.item_id
             WHERE si.sale_id = ?
@@ -745,7 +746,6 @@ app.post('/production', verifyToken, async (req, res) => {
     try {
         await db.promise().query('START TRANSACTION');
 
-        // 🚀 FIXED: Use ON DUPLICATE KEY UPDATE to add stock to an existing item instead of crashing
         const insertItemQuery = `
             INSERT INTO item (barcode, item_name, item_group_id, gst_percentage, mrp, purchase_rate, sale_rate, stock, unit) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -864,9 +864,8 @@ app.post('/invoices/:sale_id/return-item', verifyToken, async (req, res) => {
     try {
         await db.promise().query('START TRANSACTION');
 
-        // 1. Fetch the specific item from the invoice
         const [saleItems] = await db.promise().query(
-            'SELECT * FROM sale_items WHERE sale_id = ? AND item_id = ?', 
+            'SELECT * FROM SALES_ITEM WHERE sale_id = ? AND item_id = ?', 
             [sale_id, item_id]
         );
 
@@ -881,28 +880,24 @@ app.post('/invoices/:sale_id/return-item', verifyToken, async (req, res) => {
             throw new Error("Invalid return quantity.");
         }
 
-        // 2. Calculate the financial deductions
         const deductionAmount = saleItem.sale_rate * returnQty;
         const deductionTax = (saleItem.tax_amount / saleItem.quantity) * returnQty; 
 
-        // 3. Update or delete the item from the invoice
         if (returnQty === saleItem.quantity) {
-            // Full return of this specific item
-            await db.promise().query('DELETE FROM sale_items WHERE sale_id = ? AND item_id = ?', [sale_id, item_id]);
+            await db.promise().query('DELETE FROM SALES_ITEM WHERE sale_id = ? AND item_id = ?', [sale_id, item_id]);
         } else {
-            // Partial return of this specific item
             await db.promise().query(
-                'UPDATE sale_items SET quantity = quantity - ?, amount = amount - ?, tax_amount = tax_amount - ? WHERE sale_id = ? AND item_id = ?',
+                'UPDATE SALES_ITEM SET quantity = quantity - ?, amount = amount - ?, tax_amount = tax_amount - ? WHERE sale_id = ? AND item_id = ?',
                 [returnQty, deductionAmount, deductionTax, sale_id, item_id]
             );
         }
 
-        // 4. Adjust the main Invoice totals
         await db.promise().query(
-            'UPDATE sales SET grand_total = grand_total - ?, total_tax_amount = total_tax_amount - ? WHERE sale_id = ?',
+            'UPDATE SALES SET grand_total = grand_total - ?, total_tax_amount = total_tax_amount - ? WHERE sale_id = ?',
             [deductionAmount, deductionTax, sale_id] 
         );
 
+        // 🚀 RESTOCK INVENTORY
         const [updateResult] = await db.promise().query(
             'UPDATE item SET stock = stock + ? WHERE item_id = ?', 
             [returnQty, item_id]

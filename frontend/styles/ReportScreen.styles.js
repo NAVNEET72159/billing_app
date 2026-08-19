@@ -3,85 +3,133 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f4f4f9',
+    container: { 
+        flex: 1, 
+        backgroundColor: '#F8F9FA' 
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 50,
-        paddingHorizontal: 20,
-        marginBottom: 10,
+    headerRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        padding: 20, 
+        paddingTop: Platform.OS === 'ios' ? 50 : 20, 
+        backgroundColor: '#fff', 
+        borderBottomWidth: 1, 
+        borderBottomColor: '#eee' 
     },
-    backButton: {
-        width: 45,
-        height: 45,
-        borderRadius: 22.5,
-        backgroundColor: '#e6e6e6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 15,
+    backButton: { 
+        marginRight: 15, 
+        padding: 5 
     },
-    backArrow: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
+    backArrow: { 
+        fontSize: 30, 
+        color: '#2c2c4d', 
+        lineHeight: 30 
     },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#000',
+    title: { 
+        fontSize: 22, 
+        fontWeight: 'bold', 
+        color: '#2c2c4d' 
     },
-    content: {
-        paddingHorizontal: 20,
-        paddingBottom: 100, // Room for bottom nav
+    tabContainer: { 
+        flexDirection: 'row', 
+        margin: 20, 
+        backgroundColor: '#e8e6e1', 
+        borderRadius: 8, 
+        padding: 4 
     },
-    subtitle: {
-        fontSize: 16,
-        color: '#333',
-        marginBottom: 10,
+    tab: { 
+        flex: 1, 
+        paddingVertical: 10, 
+        alignItems: 'center', 
+        borderRadius: 6 
     },
-    dropdownBtn: {
-        backgroundColor: '#988f98', // The grey from your mockup
-        height: 60,
-        borderRadius: 15,
-        justifyContent: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 30,
+    activeTab: { 
+        backgroundColor: '#fff', 
+        shadowColor: '#000', 
+        shadowOffset: { 
+            width: 0, 
+            height: 1 
+        }, 
+        shadowOpacity: 0.1, 
+        shadowRadius: 2, 
+        elevation: 2 
     },
-    dropdownText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+    tabText: { 
+        fontSize: 16, 
+        color: '#666', 
+        fontWeight: 'bold' 
     },
-    dropdownMenu: {
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        marginTop: -20,
-        marginBottom: 20,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+    activeTabText: { 
+        color: '#2c2c4d' 
     },
-    dropdownItem: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+    actionRow: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 15 
     },
-    dropdownItemText: {
-        fontSize: 16,
-        color: '#333',
+    sectionSubtitle: { 
+        fontSize: 16, 
+        color: '#666', 
+        fontWeight: 'bold' 
     },
-    chartContainer: {
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        padding: 10,
-        borderRadius: 15,
-        marginBottom: 20,
-        elevation: 2,
+    printBtn: { 
+        backgroundColor: '#7DBA45', 
+        paddingHorizontal: 15, 
+        paddingVertical: 10, 
+        borderRadius: 8 
+    },
+    printBtnText: { 
+        color: '#fff', 
+        fontWeight: 'bold', 
+        fontSize: 14 
+    },
+
+    card: { 
+        flexDirection: 'row', 
+        backgroundColor: '#fff', 
+        padding: 15, 
+        borderRadius: 12, 
+        marginBottom: 12, 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 2 }, 
+        shadowOpacity: 0.1, 
+        shadowRadius: 3, 
+        elevation: 2, 
+        alignItems: 'center' 
+    },
+    itemName: { 
+        fontSize: 16, 
+        fontWeight: 'bold', 
+        color: '#2c2c4d', 
+        marginBottom: 4 
+    },
+    itemDetail: { 
+        fontSize: 14, 
+        color: '#666' 
+    },
+    itemStock: { 
+        fontSize: 18, 
+        fontWeight: '900' 
+    },
+    monthBadge: { 
+        backgroundColor: '#2c2c4d', 
+        width: 50, 
+        height: 50, 
+        borderRadius: 25, 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+    monthText: { 
+        color: '#fff', 
+        fontWeight: 'bold', 
+        fontSize: 14 
+    },
+    emptyText: { 
+        textAlign: 'center', 
+        color: '#888', 
+        marginTop: 40, 
+        fontSize: 16 
     }
 });
 
