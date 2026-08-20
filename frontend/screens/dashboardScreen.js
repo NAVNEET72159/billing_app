@@ -1,9 +1,7 @@
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, useWindowDimensions, DeviceEventEmitter } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, TouchableOpacity, Image, ScrollView, useWindowDimensions, DeviceEventEmitter } from 'react-native';
 import styles from '../styles/DashboardScreen.styles';
 
 export default function DashboardScreen({ navigation }) {

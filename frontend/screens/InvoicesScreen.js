@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+// 🚀 ADDED 'createElement' to imports for the Web Date Picker
+import React, { useState, useEffect, createElement } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, ScrollView, TextInput, StyleSheet } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Print from 'expo-print'; // 🚀 IMPORT EXPO PRINT
+import * as Print from 'expo-print'; 
 import { styles } from '../styles/InvoicesScreen.styles';
 import Header from '../components/Header';
 import { API_URL } from '../config/api';
@@ -14,11 +15,14 @@ export default function InvoiceScreen({ navigation }) {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [invoiceItems, setInvoiceItems] = useState([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
-
     const [isReturnModalVisible, setReturnModalVisible] = useState(false);
     const [itemToReturn, setItemToReturn] = useState(null);
     const [returnQty, setReturnQty] = useState('');
     const [returnLoading, setReturnLoading] = useState(false);
+    const today = new Date().toISOString().split('T')[0];
+    const [startDate, setStartDate] = useState(today);
+    const [endDate, setEndDate] = useState(today);
+    const [downloadingZip, setDownloadingZip] = useState(false);
 
     useEffect(() => {
         fetchInvoices();
@@ -40,6 +44,14 @@ export default function InvoiceScreen({ navigation }) {
             setLoading(false);
         }
     }
+
+    // 🚀 NEW: Master Filter Logic
+    // This watches the invoices array and the date states to instantly filter the list
+    const filteredInvoices = invoices.filter(inv => {
+        if (!inv.sale_date) return false;
+        const invDate = inv.sale_date.split('T')[0];
+        return invDate >= startDate && invDate <= endDate;
+    });
 
     const handleViewDetails = async (invoice) => {
         setSelectedInvoice(invoice);
@@ -88,14 +100,115 @@ export default function InvoiceScreen({ navigation }) {
     };
 
     // ==========================================
-    // 🚀 NEW: REPRINT RECEIPT LOGIC
+    // 🖨️ PRINT SUMMARY LOGIC (UPDATED FOR RANGE)
     // ==========================================
+    const handlePrintDailySummary = async () => {
+        if (!startDate || !endDate) return Alert.alert("Missing Date", "Please enter a valid start and end date.");
+        
+        if (filteredInvoices.length === 0) {
+            return Alert.alert("No Data", "There are no recorded sales for this date range.");
+        }
+
+        const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.grand_total), 0);
+
+        const htmlContent = `
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                    .header { text-align: center; border-bottom: 2px solid #7DBA45; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header h1 { margin: 0; color: #2c2c4d; }
+                    .header h3 { margin: 5px 0 0 0; color: #666; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { background-color: #f4f4f4; }
+                    .right { text-align: right; }
+                    .totals { text-align: right; font-size: 18px; font-weight: bold; color: #2e7d32; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>PYSSUM</h1>
+                    <h3>Sales Summary</h3>
+                    <p>${startDate === endDate ? `Date: ${startDate}` : `From: ${startDate} To: ${endDate}`}</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Invoice No.</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Payment</th>
+                            <th class="right">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredInvoices.map(inv => `
+                            <tr>
+                                <td>${inv.invoice_number}</td>
+                                <td>${inv.sale_date.split('T')[0]}</td>
+                                <td>${inv.customer_name || 'Walk-in'}</td>
+                                <td>${inv.payment_method || 'CASH'}</td>
+                                <td class="right">${parseFloat(inv.grand_total).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="totals">Total Revenue: ₹${totalRevenue.toFixed(2)}</div>
+            </body>
+            </html>
+        `;
+
+        try {
+            if (Platform.OS === 'web') {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+            } else {
+                await Print.printAsync({ html: htmlContent });
+            }
+        } catch (error) {
+            console.error("Print Error:", error);
+        }
+    };
+
+    // ==========================================
+    // 🗜️ DOWNLOAD ZIP LOGIC (UPDATED FOR RANGE)
+    // ==========================================
+    const handleDownloadZip = async () => {
+        if (!startDate || !endDate) return Alert.alert("Missing Date", "Please enter valid dates.");
+        setDownloadingZip(true);
+
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(`${API_URL}/invoices/export/zip?startDate=${startDate}&endDate=${endDate}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob'
+            });
+            if (Platform.OS === 'web') {
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `Invoices_${startDate}_to_${endDate}.zip`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                Alert.alert("Mobile Download", "ZIP extraction is optimized for Web. Consider generating single receipts via the receipt modal.");
+            }
+        } catch (error) {
+            console.error("ZIP Download Error:", error);
+            Alert.alert("Error", "Could not generate ZIP file. Ensure there are sales for this date range.");
+        } finally {
+            setDownloadingZip(false);
+        }
+    };
+
     const handleReprint = async () => {
         if (!selectedInvoice || invoiceItems.length === 0) return;
-
         const currentTotal = invoiceItems.reduce((sum, i) => sum + parseFloat(i.amount), 0).toFixed(2);
-
-        // Generate the HTML for the Receipt
         const htmlContent = `
             <html>
             <head>
@@ -115,17 +228,15 @@ export default function InvoiceScreen({ navigation }) {
             </head>
             <body>
                 <div class="header">
-                    <h1>ShanDelay Enterprises</h1>
+                    <h1>PYSSUM</h1>
                     <h3>TAX INVOICE / RECEIPT</h3>
                 </div>
-                
                 <div class="invoice-info">
                     <p><strong>Invoice No:</strong> ${selectedInvoice.invoice_number}</p>
                     <p><strong>Date:</strong> ${formatDate(selectedInvoice.sale_date)}</p>
                     <p><strong>Customer:</strong> ${selectedInvoice.customer_name || 'Walk-in Customer'}</p>
                     <p><strong>Payment Mode:</strong> ${selectedInvoice.payment_method || 'CASH'}</p>
                 </div>
-
                 <table>
                     <thead>
                         <tr>
@@ -146,11 +257,7 @@ export default function InvoiceScreen({ navigation }) {
                         `).join('')}
                     </tbody>
                 </table>
-
-                <div class="total-row">
-                    Grand Total: ₹${currentTotal}
-                </div>
-                
+                <div class="total-row">Grand Total: ₹${currentTotal}</div>
                 <div class="footer">
                     <p>Thank you for shopping with us!</p>
                     <p>Goods once sold can only be returned per store policy.</p>
@@ -161,18 +268,14 @@ export default function InvoiceScreen({ navigation }) {
 
         try {
             if (Platform.OS === 'web') {
-                // Cross-browser Web Printing
                 const printWindow = window.open('', '_blank', 'width=800,height=600');
-                printWindow.document.write(htmlContent);
-                printWindow.document.close();
-                printWindow.focus();
-                // Slight delay to allow CSS to load before printing
-                setTimeout(() => {
-                    printWindow.print();
-                    printWindow.close();
-                }, 250);
+                const printDocument = printWindow.document;
+                printDocument.open();
+                printDocument.documentElement.innerHTML = htmlContent;
+                printDocument.close();
+                printDocument.focus();
+                setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
             } else {
-                // Mobile Printing (iOS/Android)
                 await Print.printAsync({ html: htmlContent });
             }
         } catch (error) {
@@ -181,9 +284,6 @@ export default function InvoiceScreen({ navigation }) {
         }
     };
 
-    // ==========================================
-    // RETURN ITEM LOGIC
-    // ==========================================
     const openReturnModal = (item) => {
         setItemToReturn(item);
         setReturnQty(String(item.quantity)); 
@@ -201,16 +301,11 @@ export default function InvoiceScreen({ navigation }) {
         try {
             const token = await AsyncStorage.getItem('userToken');
             await axios.post(`${API_URL}/invoices/${selectedInvoice.sale_id}/return-item`, 
-                {
-                    item_id: itemToReturn.item_id,
-                    return_quantity: qtyToReturn
-                },
+                { item_id: itemToReturn.item_id, return_quantity: qtyToReturn },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-
             Alert.alert("Success", "Item returned and inventory restocked!");
             setReturnModalVisible(false);
-            
             handleViewDetails(selectedInvoice);
             fetchInvoices();
         } catch (error) {
@@ -236,11 +331,66 @@ export default function InvoiceScreen({ navigation }) {
             
             <Text style={styles.pageTitle}>Billing History</Text>
 
+            {/* 🚀 NEW: DATE RANGE PANEL WITH NATIVE CALENDARS */}
+            <View style={styles.reportPanel}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <Text style={styles.panelLabel}>Filter by Date Range:</Text>
+                    <Text style={{ fontSize: 12, color: '#666', fontWeight: 'bold' }}>
+                        Showing {filteredInvoices.length} Invoices
+                    </Text>
+                </View>
+                
+                <View style={styles.dateRow}>
+                    <Text style={styles.dateLabel}>From:</Text>
+                    {Platform.OS === 'web' ? (
+                        createElement('input', {
+                            type: 'date',
+                            value: startDate,
+                            onChange: (e) => setStartDate(e.target.value),
+                            style: { flex: 1, padding: 8, borderRadius: 5, border: '1px solid #ccc', marginHorizontal: 5 }
+                        })
+                    ) : (
+                        <TextInput 
+                            style={styles.dateInput} 
+                            placeholder="YYYY-MM-DD" 
+                            value={startDate} 
+                            onChangeText={setStartDate} 
+                        />
+                    )}
+
+                    <Text style={styles.dateLabel}>To:</Text>
+                    {Platform.OS === 'web' ? (
+                        createElement('input', {
+                            type: 'date',
+                            value: endDate,
+                            onChange: (e) => setEndDate(e.target.value),
+                            style: { flex: 1, padding: 8, borderRadius: 5, border: '1px solid #ccc', marginHorizontal: 5 }
+                        })
+                    ) : (
+                        <TextInput 
+                            style={styles.dateInput} 
+                            placeholder="YYYY-MM-DD" 
+                            value={endDate} 
+                            onChangeText={setEndDate} 
+                        />
+                    )}
+                </View>
+
+                <View style={styles.reportControls}>
+                    <TouchableOpacity style={[styles.actionBtn, { flex: 1 }]} onPress={handlePrintDailySummary}>
+                        <Text style={styles.actionBtnText}>Print Summary</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#2c2c4d', flex: 1 }]} onPress={handleDownloadZip} disabled={downloadingZip}>
+                        {downloadingZip ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.actionBtnText}>Download ZIP</Text>}
+                    </TouchableOpacity>
+                </View>
+            </View>
+
             {loading ? (
                 <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
             ) : (
                 <FlatList 
-                    data={invoices}
+                    data={filteredInvoices} // 🚀 FIXED: Now feeds the filtered array instead of raw invoices
                     keyExtractor={(item, index) => item.sale_id ? item.sale_id.toString() : index.toString()}
                     contentContainerStyle={styles.listContainer} 
                     showsVerticalScrollIndicator={false}
@@ -271,7 +421,7 @@ export default function InvoiceScreen({ navigation }) {
                             </View>
                         </TouchableOpacity>
                     )}
-                    ListEmptyComponent={<Text style={styles.emptyText}>No invoices found.</Text>}
+                    ListEmptyComponent={<Text style={styles.emptyText}>No invoices found in this date range.</Text>}
                 />
             )}
 
@@ -280,8 +430,6 @@ export default function InvoiceScreen({ navigation }) {
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Receipt Details</Text>
-                        
-                        {/* 🚀 NEW: Print & Close Buttons Side-by-Side */}
                         <View style={{flexDirection: 'row', alignItems: 'center', gap: 15}}>
                             <TouchableOpacity onPress={handleReprint} style={styles.printBtn}>
                                 <Text style={styles.printBtnText}>🖨️ Print</Text>

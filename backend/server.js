@@ -4,6 +4,8 @@ const verifyToken = require("./authMiddleware");
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const PDFDocument = require('pdfkit');
+const { ZipArchive } = require('archiver');
 require("dotenv").config();
 
 const app = express();
@@ -952,5 +954,77 @@ app.delete('/invoices/:sale_id', verifyToken, async (req, res) => {
         await db.promise().query('ROLLBACK');
         console.error("Delete Invoice Error:", error);
         res.status(500).json({ error: "Failed to delete invoice and restock items." });
+    }
+});
+
+// ==========================================
+// 🗜️ EXPORT DAILY INVOICES AS ZIP
+// ==========================================
+app.get('/invoices/export/zip', verifyToken, async (req, res) => {
+    const { startDate, endDate } = req.query; 
+    if (!startDate || !endDate) return res.status(400).json({ error: "Start date and End date are required." });
+
+    try {
+        const [sales] = await db.promise().query(
+            `SELECT s.*, c.customer_name 
+             FROM SALES s 
+             LEFT JOIN CUSTOMER c ON s.customer_id = c.customer_id 
+             WHERE DATE(s.sale_date) BETWEEN ? AND ?`, 
+            [startDate, endDate]
+        );
+
+        if (sales.length === 0) {
+            return res.status(404).json({ error: "No invoices found for this date range." });
+        }
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=ShanDelay_Invoices_${startDate}_to_${endDate}.zip`);
+
+        const archive = new ZipArchive({ zlib: { level: 9 } });
+        archive.on('error', function(err) {
+            throw err;
+        });
+
+        archive.pipe(res);
+
+        for (let sale of sales) {
+            const [items] = await db.promise().query(
+                `SELECT si.*, i.item_name 
+                 FROM SALES_ITEM si 
+                 LEFT JOIN ITEM i ON si.item_id = i.item_id 
+                 WHERE si.sale_id = ?`, 
+                [sale.sale_id]
+            );
+
+            const doc = new PDFDocument({ margin: 50 });
+            const fileName = `Invoice_${sale.invoice_number}.pdf`;
+            archive.append(doc, { name: fileName });
+            
+            doc.fontSize(20).text('ShanDelay Enterprises', { align: 'center' });
+            doc.fontSize(12).text('TAX INVOICE', { align: 'center' });
+            doc.moveDown();
+            doc.text(`Invoice No: ${sale.invoice_number}`);
+            doc.text(`Date: ${new Date(sale.sale_date).toLocaleDateString()}`);
+            doc.text(`Customer: ${sale.customer_name || 'Walk-in Customer'}`);
+            doc.text(`Payment: ${sale.payment_method || 'CASH'}`);
+            doc.moveDown();
+            
+            doc.text('------------------------------------------------------------------');
+            items.forEach(item => {
+                doc.text(`${item.item_name || 'Archived Item'}  |  Qty: ${item.quantity}  |  Rate: Rs${item.sale_rate}  |  Total: Rs${item.amount}`);
+            });
+            doc.text('------------------------------------------------------------------');
+            doc.fontSize(14).text(`Grand Total: Rs${sale.grand_total}`, { align: 'right' });
+            doc.end();
+        }
+        await archive.finalize();
+
+    } catch (error) {
+        console.error("ZIP Export Error:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Failed to generate ZIP file." });
+        } else {
+            res.end(); 
+        }
     }
 });

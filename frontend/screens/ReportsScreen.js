@@ -5,13 +5,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import { styles } from '../styles/ReportScreen.styles';
 import { API_URL } from '../config/api';
+import CustomDropdown from '../components/CustomDropdown';
 
 export default function ReportsScreen({ navigation }) {
     const [activeTab, setActiveTab] = useState('Stock');
     const [stockItems, setStockItems] = useState([]);
     const [topSales, setTopSales] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [itemGroups, setItemGroups] = useState([]);
+    const [selectedGroupId, setSelectedGroupId] = useState(null);
+    const [selectedGroupName, setSelectedGroupName] = useState('All Groups');
 
+    useEffect(() => {
+        fetchGroups();
+    }, []);
     useEffect(() => {
         if (activeTab === 'Stock') {
             fetchStockItems();
@@ -19,6 +26,25 @@ export default function ReportsScreen({ navigation }) {
             fetchTopSales();
         }
     }, [activeTab]);
+
+    // ==========================================
+    // 🗂️ FETCH GROUPS FOR FILTER
+    // ==========================================
+    const fetchGroups = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const groupRes = await axios.get(`${API_URL}/groups`, { headers: { Authorization: `Bearer ${token}` } });
+            
+            // Add "All Groups" as the default first option
+            const groups = [
+                { id: null, name: 'All Groups' }, 
+                ...groupRes.data.map(g => ({ id: g.item_group_id, name: g.group_name }))
+            ];
+            setItemGroups(groups);
+        } catch (error) {
+            console.error("Fetch Groups Error:", error);
+        }
+    };
 
     // ==========================================
     // 📦 FETCH LIVE STOCK
@@ -59,11 +85,20 @@ export default function ReportsScreen({ navigation }) {
         }
     };
 
+    const filteredStockItems = selectedGroupId 
+        ? stockItems.filter(item => String(item.item_group_id) === String(selectedGroupId))
+        : stockItems;
+
     // ==========================================
     // 🖨️ PRINT STOCK REPORT LOGIC
     // ==========================================
     const handlePrintStockReport = async () => {
-        if (stockItems.length === 0) return;
+        if (filteredStockItems.length === 0) {
+            Alert.alert("Empty Report", "There are no items in this group to print.");
+            return;
+        }
+
+        const reportTitle = selectedGroupId ? `${selectedGroupName} - Stock Report` : `All Item Stock Report`;
 
         const htmlContent = `
             <html>
@@ -85,8 +120,8 @@ export default function ReportsScreen({ navigation }) {
             </head>
             <body>
                 <div class="header">
-                    <h1>ShanDelay Enterprises</h1>
-                    <h3>All Item Stock Report</h3>
+                    <h1>PYSSUM</h1>
+                    <h3>${reportTitle}</h3>
                 </div>
                 
                 <div class="timestamp">
@@ -104,7 +139,7 @@ export default function ReportsScreen({ navigation }) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${stockItems.map((item, index) => `
+                        ${filteredStockItems.map((item, index) => `
                             <tr>
                                 <td>${index + 1}</td>
                                 <td>${item.barcode || 'N/A'}</td>
@@ -124,8 +159,11 @@ export default function ReportsScreen({ navigation }) {
         try {
             if (Platform.OS === 'web') {
                 const printWindow = window.open('', '_blank', 'width=800,height=800');
-                printWindow.document.write(htmlContent);
-                printWindow.document.close();
+                const parsedDocument = new DOMParser().parseFromString(htmlContent, 'text/html');
+                printWindow.document.replaceChild(
+                    printWindow.document.importNode(parsedDocument.documentElement, true),
+                    printWindow.document.documentElement
+                );
                 printWindow.focus();
                 setTimeout(() => {
                     printWindow.print();
@@ -174,15 +212,28 @@ export default function ReportsScreen({ navigation }) {
                     {/* ========================================= */}
                     {activeTab === 'Stock' && (
                         <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                            <View style={{ marginBottom: 15, zIndex: 10 }}>
+                                <Text style={[styles.sectionSubtitle, { marginBottom: 5 }]}>Filter by Group:</Text>
+                                <CustomDropdown
+                                    data={itemGroups}
+                                    value={selectedGroupName}
+                                    placeholder="Select Group..."
+                                    onSelect={(item) => {
+                                        setSelectedGroupId(item.id);
+                                        setSelectedGroupName(item.name);
+                                    }}
+                                    onCreateNew={() => Alert.alert("Note", "Use Item Group screen to add new groups.")}
+                                />
+                            </View>
                             <View style={styles.actionRow}>
-                                <Text style={styles.sectionSubtitle}>Total Items: {stockItems.length}</Text>
+                                <Text style={styles.sectionSubtitle}>Total Items: {filteredStockItems.length}</Text>
                                 <TouchableOpacity style={styles.printBtn} onPress={handlePrintStockReport}>
                                     <Text style={styles.printBtnText}>🖨️ Print Report</Text>
                                 </TouchableOpacity>
                             </View>
 
                             <FlatList 
-                                data={stockItems}
+                                data={filteredStockItems}
                                 keyExtractor={(item) => item.item_id.toString()}
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ paddingBottom: 50 }}
