@@ -113,7 +113,7 @@ app.post('/login', (req, res) => {
         const token = jwt.sign(
             { userId: user.user_id, role: user.role }, 
             process.env.JWT_SECRET, 
-            { expiresIn: '1h' }
+            { expiresIn: '12h' }
         );
 
         res.status(200).json({ 
@@ -532,7 +532,8 @@ app.get('/groups', verifyToken, async (req, res) => {
 app.get('/invoices', verifyToken, async (req, res) => {
     try {
         const query = `
-            SELECT s.sale_id, s.invoice_number, s.grand_total, s.payment_method, s.sale_date, c.customer_name
+            SELECT s.sale_id, s.invoice_number, s.grand_total, s.payment_method, s.sale_date, 
+                   c.customer_name, c.phone_number, c.current_address
             FROM SALES s
             LEFT JOIN CUSTOMER c ON s.customer_id = c.customer_id
             ORDER BY s.sale_date DESC
@@ -966,7 +967,7 @@ app.get('/invoices/export/zip', verifyToken, async (req, res) => {
 
     try {
         const [sales] = await db.promise().query(
-            `SELECT s.*, c.customer_name 
+            `SELECT s.*, c.customer_name, c.phone_number, c.current_address 
              FROM SALES s 
              LEFT JOIN CUSTOMER c ON s.customer_id = c.customer_id 
              WHERE DATE(s.sale_date) BETWEEN ? AND ?`, 
@@ -978,21 +979,17 @@ app.get('/invoices/export/zip', verifyToken, async (req, res) => {
         }
 
         res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename=ShanDelay_Invoices_${startDate}_to_${endDate}.zip`);
+        res.setHeader('Content-Disposition', `attachment; filename=PYSSUM_Invoices_${startDate}_to_${endDate}.zip`);
 
+        const { ZipArchive } = require('archiver');
         const archive = new ZipArchive({ zlib: { level: 9 } });
-        archive.on('error', function(err) {
-            throw err;
-        });
-
+        
+        archive.on('error', function(err) { throw err; });
         archive.pipe(res);
 
         for (let sale of sales) {
             const [items] = await db.promise().query(
-                `SELECT si.*, i.item_name 
-                 FROM SALES_ITEM si 
-                 LEFT JOIN ITEM i ON si.item_id = i.item_id 
-                 WHERE si.sale_id = ?`, 
+                `SELECT si.*, i.item_name FROM SALES_ITEM si LEFT JOIN ITEM i ON si.item_id = i.item_id WHERE si.sale_id = ?`, 
                 [sale.sale_id]
             );
 
@@ -1000,31 +997,59 @@ app.get('/invoices/export/zip', verifyToken, async (req, res) => {
             const fileName = `Invoice_${sale.invoice_number}.pdf`;
             archive.append(doc, { name: fileName });
             
-            doc.fontSize(20).text('ShanDelay Enterprises', { align: 'center' });
-            doc.fontSize(12).text('TAX INVOICE', { align: 'center' });
-            doc.moveDown();
-            doc.text(`Invoice No: ${sale.invoice_number}`);
-            doc.text(`Date: ${new Date(sale.sale_date).toLocaleDateString()}`);
-            doc.text(`Customer: ${sale.customer_name || 'Walk-in Customer'}`);
-            doc.text(`Payment: ${sale.payment_method || 'CASH'}`);
-            doc.moveDown();
+            // --- TOP LEFT: Header & Dates ---
+            doc.font('Times-Bold').fontSize(30).fillColor('#000').text('TAX INVOICE', 50, 50);
+            doc.font('Helvetica').fontSize(14).text(`Invoice#: ${sale.invoice_number}`, 50, 85);
             
-            doc.text('------------------------------------------------------------------');
-            items.forEach(item => {
-                doc.text(`${item.item_name || 'Archived Item'}  |  Qty: ${item.quantity}  |  Rate: Rs${item.sale_rate}  |  Total: Rs${item.amount}`);
+            const shortDate = new Date(sale.sale_date).toLocaleDateString('en-GB').replace(/\//g, '-');
+            doc.text(`Invoice Date: ${shortDate}`, 50, 140);
+            doc.text(`Due Date: ${shortDate}`, 50, 160);
+            
+            // --- TOP RIGHT: Company & Customer Info ---
+            doc.font('Helvetica-Bold').fontSize(36).fillColor('#E74C3C').text('PYSSUM', 320, 45);
+            doc.font('Helvetica').fontSize(10).fillColor('#000').text('537/8, Puraniya, Sitapur Road,\nLucknow-226020, Uttar Pradesh,\nIndia', 320, 85);
+            
+            doc.fontSize(12).text(`Billed To: ${sale.customer_name || 'Walk-in Customer'}`, 320, 140);
+            doc.text(`Contact Number: ${sale.phone_number || 'N/A'}`, 320, 155);
+            doc.text(`Address: ${sale.current_address || ''}`, 320, 170);
+            
+            // --- TABLE HEADER ---
+            doc.roundedRect(50, 210, 500, 30, 8).fill('#000000');
+            doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(12);
+            doc.text('#', 65, 220);
+            doc.text('Item & Description', 100, 220);
+            doc.text('MRP', 380, 220);
+            doc.text('Total Cost', 450, 220);
+            
+            // --- TABLE ROWS ---
+            let y = 260;
+            doc.fillColor('#000000').font('Helvetica').fontSize(12);
+            
+            items.forEach((item, index) => {
+                if (y > 700) { doc.addPage(); y = 50; } 
+                
+                doc.text((index + 1).toString(), 65, y);
+                doc.font('Helvetica-Bold').text(item.item_name || 'Archived Item', 100, y);
+                doc.font('Helvetica').text(`Qty: ${item.quantity}`, 100, y + 16);
+                
+                doc.text(parseFloat(item.sale_rate).toFixed(2), 380, y);
+                doc.font('Helvetica-Bold').text(parseFloat(item.amount).toFixed(2), 450, y);
+                doc.font('Helvetica'); 
+                
+                y += 45; 
             });
-            doc.text('------------------------------------------------------------------');
-            doc.fontSize(14).text(`Grand Total: Rs${sale.grand_total}`, { align: 'right' });
+            
+            // --- FOOTER ---
+            doc.font('Helvetica-Bold').fontSize(12).text('Authorized Signature:', 50, y + 20);
+            doc.fontSize(14).text(`Grand Total: Rs${sale.grand_total}`, 350, y + 20, { align: 'right' });
+            
             doc.end();
         }
+
         await archive.finalize();
 
     } catch (error) {
         console.error("ZIP Export Error:", error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: "Failed to generate ZIP file." });
-        } else {
-            res.end(); 
-        }
+        if (!res.headersSent) res.status(500).json({ error: "Failed to generate ZIP file." });
     }
 });

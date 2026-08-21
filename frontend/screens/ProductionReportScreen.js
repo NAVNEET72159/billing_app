@@ -147,18 +147,28 @@ export default function ProductionReportScreen({ navigation }) {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            Alert.alert("Success", "Production saved and ledger updated!");
+            const successMsg = `Successfully recorded production run for ${formData.item_name}! Inventory and ledgers have been updated.`;
+            
+            if (Platform.OS === 'web') {
+                window.alert(successMsg);
+            } else {
+                Alert.alert("Production Saved 🎉", successMsg);
+            }
             
             setFormData({ barcode: '', item_name: '', item_group_id: '', item_group_name: '', gst_percentage: '', mrp: '', purchase_rate: '', sale_rate: '', units_produced: '1', unit: '' });
             setUsedMaterialsList([]);
-            fetchDependencies();
-            fetchHistory();
-            setActiveTab('History'); 
+            
+            navigation.goBack();
 
         } catch (error) {
             console.error("Production Error:", error);
             const backendError = error.response && error.response.data ? error.response.data.error : "Failed to process production.";
-            Alert.alert("Error", backendError);
+            
+            if (Platform.OS === 'web') {
+                window.alert(`Error: ${backendError}`);
+            } else {
+                Alert.alert("Error", backendError);
+            }
         } finally {
             setLoading(false);
         }

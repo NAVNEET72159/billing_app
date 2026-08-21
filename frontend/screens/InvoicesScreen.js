@@ -45,7 +45,6 @@ export default function InvoiceScreen({ navigation }) {
         }
     }
 
-    // 🚀 NEW: Master Filter Logic
     // This watches the invoices array and the date states to instantly filter the list
     const filteredInvoices = invoices.filter(inv => {
         if (!inv.sale_date) return false;
@@ -162,15 +161,21 @@ export default function InvoiceScreen({ navigation }) {
         try {
             if (Platform.OS === 'web') {
                 const printWindow = window.open('', '_blank');
+                // 🚀 FIXED: Using document.write
                 printWindow.document.write(htmlContent);
                 printWindow.document.close();
                 printWindow.focus();
-                setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+                
+                setTimeout(() => { 
+                    printWindow.print(); 
+                    printWindow.close(); 
+                }, 750);
             } else {
                 await Print.printAsync({ html: htmlContent });
             }
         } catch (error) {
             console.error("Print Error:", error);
+            Alert.alert("Error", "Could not print the summary.");
         }
     };
 
@@ -209,58 +214,108 @@ export default function InvoiceScreen({ navigation }) {
     const handleReprint = async () => {
         if (!selectedInvoice || invoiceItems.length === 0) return;
         const currentTotal = invoiceItems.reduce((sum, i) => sum + parseFloat(i.amount), 0).toFixed(2);
+        const shortDate = new Date(selectedInvoice.sale_date).toLocaleDateString('en-GB').replace(/\//g, '-');
+
         const htmlContent = `
             <html>
             <head>
                 <style>
-                    body { font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: auto; }
-                    .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 20px; }
-                    .header h1 { margin: 0; color: #2c2c4d; }
-                    .invoice-info { margin-bottom: 20px; font-size: 14px; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    th, td { border-bottom: 1px solid #ddd; padding: 10px 5px; text-align: left; }
-                    th { background-color: #f8f8f8; font-weight: bold; }
-                    .right-align { text-align: right; }
-                    .center-align { text-align: center; }
-                    .total-row { font-size: 20px; font-weight: bold; color: #2e7d32; text-align: right; margin-top: 20px; }
-                    .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #888; }
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 30px; color: #000; max-width: 800px; margin: auto; }
+                    .top-container { display: flex; justify-content: space-between; margin-bottom: 20px; }
+                    
+                    /* Left Column Styling */
+                    .left-header h1 { font-size: 34px; font-weight: 900; margin: 0; font-family: Georgia, serif; }
+                    .left-header p { font-size: 16px; margin: 5px 0; }
+                    .dates-section { margin-top: 45px; }
+                    
+                    /* Right Column Styling */
+                    .right-header { text-align: left; width: 350px; }
+                    
+                    /* 🚀 LOGO STYLING */
+                    .logo img { max-width: 180px; height: auto; margin-bottom: -5px; margin-left: -5px; display: block; }
+                    
+                    .logo-text { font-size: 42px; font-weight: 900; margin: 0; letter-spacing: 3px; font-family: Arial, sans-serif; }
+                    .logo-text span { color: #2c2c4d; } /* Updated to match reference color */
+                    .company-address { font-size: 13px; line-height: 1.5; margin-top: 5px; color: #000; }
+                    .customer-info { font-size: 15px; margin-top: 25px; line-height: 1.6; }
+                    
+                    /* Table Styling */
+                    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; font-size: 15px; }
+                    thead { background-color: #000; color: #fff; }
+                    th { padding: 12px 15px; text-align: left; border: none; }
+                    th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+                    th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; text-align: right; }
+                    td { padding: 15px 15px 5px 15px; vertical-align: top; border-bottom: 1px solid #eee; }
+                    td:last-child { text-align: right; font-weight: bold; }
+                    .item-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #000; }
+                    .item-qty { color: #000; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+                    
+                    /* Footer Styling */
+                    .footer-section { display: flex; justify-content: space-between; margin-top: 40px; align-items: flex-end; }
+                    .signature { font-size: 16px; font-weight: bold; }
+                    .total-cost { font-size: 20px; font-weight: bold; color: #000; }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <h1>PYSSUM</h1>
-                    <h3>TAX INVOICE / RECEIPT</h3>
+                <div class="top-container">
+                    <div class="left-header">
+                        <h1>TAX INVOICE</h1>
+                        <p>Invoice#: ${selectedInvoice.invoice_number}</p>
+                        <div class="dates-section">
+                            <p>Invoice Date: ${shortDate}</p>
+                            <p>Due Date: ${shortDate}</p>
+                        </div>
+                    </div>
+                    <div class="right-header">
+                        <div class="logo">
+                            <!-- 🚀 INSERT YOUR LOGO URL OR BASE64 STRING HERE -->
+                            <img src="../assets/images/logo.png" alt="PYSSUM Logo" />
+                        </div>
+                        <div class="logo-text"><span>P</span><span>Y</span><span>S</span><span>S</span><span>U</span><span>M</span></div>
+                        <div class="company-address">
+                            537/8, Puraniya, Sitapur Road,<br/>
+                            Lucknow-226020, Uttar Pradesh,<br/>
+                            India
+                        </div>
+                        <div class="customer-info">
+                            <div>Billed To: ${selectedInvoice.customer_name || 'Walk-in Customer'}</div>
+                            <div>Contact Number: ${selectedInvoice.phone_number || 'N/A'}</div>
+                            <div>Address: ${selectedInvoice.current_address || ''}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="invoice-info">
-                    <p><strong>Invoice No:</strong> ${selectedInvoice.invoice_number}</p>
-                    <p><strong>Date:</strong> ${formatDate(selectedInvoice.sale_date)}</p>
-                    <p><strong>Customer:</strong> ${selectedInvoice.customer_name || 'Walk-in Customer'}</p>
-                    <p><strong>Payment Mode:</strong> ${selectedInvoice.payment_method || 'CASH'}</p>
-                </div>
+
                 <table>
                     <thead>
                         <tr>
-                            <th>Item Description</th>
-                            <th class="center-align">Qty</th>
-                            <th class="right-align">Rate (₹)</th>
-                            <th class="right-align">Total (₹)</th>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 50%;">Item & Description</th>
+                            <th style="width: 20%;">MRP</th>
+                            <th style="width: 25%;">Total Cost</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${invoiceItems.map(item => `
+                        ${invoiceItems.map((item, index) => `
                             <tr>
-                                <td>${item.item_name || 'Archived Item'}</td>
-                                <td class="center-align">${item.quantity}</td>
-                                <td class="right-align">${parseFloat(item.sale_rate).toFixed(2)}</td>
-                                <td class="right-align">${parseFloat(item.amount).toFixed(2)}</td>
+                                <td>${index + 1}</td>
+                                <td>
+                                    <div class="item-name">${item.item_name || 'Archived Item'}</div>
+                                    <div class="item-qty">Qty: ${item.quantity}</div>
+                                </td>
+                                <td>${parseFloat(item.sale_rate).toFixed(2)}</td>
+                                <td>${parseFloat(item.amount).toFixed(2)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
-                <div class="total-row">Grand Total: ₹${currentTotal}</div>
-                <div class="footer">
-                    <p>Thank you for shopping with us!</p>
-                    <p>Goods once sold can only be returned per store policy.</p>
+                
+                <div class="footer-section">
+                    <div class="signature">
+                        Authorized Signature: <br/><br/><br/>
+                    </div>
+                    <div class="total-cost">
+                        Grand Total: ₹${currentTotal}
+                    </div>
                 </div>
             </body>
             </html>
@@ -269,12 +324,15 @@ export default function InvoiceScreen({ navigation }) {
         try {
             if (Platform.OS === 'web') {
                 const printWindow = window.open('', '_blank', 'width=800,height=600');
-                const printDocument = printWindow.document;
-                printDocument.open();
-                printDocument.documentElement.innerHTML = htmlContent;
-                printDocument.close();
-                printDocument.focus();
-                setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+                // 🚀 FIXED: Using document.write
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                printWindow.focus();
+                
+                setTimeout(() => { 
+                    printWindow.print(); 
+                    printWindow.close(); 
+                }, 750); // 750ms gives the logo image enough time to load
             } else {
                 await Print.printAsync({ html: htmlContent });
             }
@@ -283,7 +341,6 @@ export default function InvoiceScreen({ navigation }) {
             Alert.alert("Error", "Could not print the invoice.");
         }
     };
-
     const openReturnModal = (item) => {
         setItemToReturn(item);
         setReturnQty(String(item.quantity)); 
