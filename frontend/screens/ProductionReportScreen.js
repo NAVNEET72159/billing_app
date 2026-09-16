@@ -125,7 +125,12 @@ export default function ProductionReportScreen({ navigation }) {
 
     const handleSaveProduction = async () => {
         if (!formData.item_name || usedMaterialsList.length === 0) {
-            Alert.alert("Validation", "Please enter a product name and add at least one raw material to the recipe.");
+            const msg = "Please enter a Product Name and add at least one Raw Material to the recipe before saving.";
+            if (Platform.OS === 'web') {
+                window.alert(msg);
+            } else {
+                Alert.alert("Missing Information", msg);
+            }
             return;
         }
 
@@ -146,7 +151,7 @@ export default function ProductionReportScreen({ navigation }) {
             await axios.post(`${API_URL}/production`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-
+            
             const successMsg = `Successfully recorded production run for ${formData.item_name}! Inventory and ledgers have been updated.`;
             
             if (Platform.OS === 'web') {

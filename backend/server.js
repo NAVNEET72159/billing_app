@@ -660,12 +660,12 @@ app.get('/reports/monthly-top-items', verifyToken, async (req, res) => {
 // 🏭 MANUFACTURING & RAW MATERIALS
 // ==========================================
 app.post('/raw-materials', verifyToken, async (req, res) => {
-    const { item_name, purchase_rate, stock, unit } = req.body;
+    const { barcode, item_name, category, purchase_rate, stock, unit } = req.body;
     if (!item_name) return res.status(400).json({ error: "Item name is required" });
 
     try {
-        const query = 'INSERT INTO raw_materials (item_name, purchase_rate, stock, unit) VALUES (?, ?, ?, ?)';
-        const [result] = await db.promise().query(query, [item_name, purchase_rate || 0, stock || 0, unit || '']);
+        const query = 'INSERT INTO raw_materials (barcode, item_name, category, purchase_rate, stock, unit) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await db.promise().query(query, [barcode || null, item_name, category || null, purchase_rate || 0, stock || 0, unit || '']);
         res.status(201).json({ raw_id: result.insertId, message: "Raw material added successfully!" });
     } catch (error) {
         console.error("Raw Material Error:", error);
@@ -707,11 +707,11 @@ app.get('/raw-material-logs', verifyToken, async (req, res) => {
 
 // 3. Update Raw Material (Name, Rate, or Stock)
 app.put('/raw-materials/:id', verifyToken, async (req, res) => {
-    const { item_name, purchase_rate, stock, unit } = req.body;
+    const { barcode, item_name, category, purchase_rate, stock, unit } = req.body;
     try {
         await db.promise().query(
-            'UPDATE raw_materials SET item_name = ?, purchase_rate = ?, stock = ?, unit = ? WHERE raw_id = ?',
-            [item_name, purchase_rate || 0, stock || 0, unit || ' ', req.params.id]
+            'UPDATE raw_materials SET barcode = ?, item_name = ?, category = ?, purchase_rate = ?, stock = ?, unit = ? WHERE raw_id = ?',
+            [barcode || null, item_name, category || null, purchase_rate || 0, stock || 0, unit || ' ', req.params.id]
         );
         res.status(200).json({ message: "Raw material updated successfully!" });
     } catch (error) {
@@ -1051,5 +1051,63 @@ app.get('/invoices/export/zip', verifyToken, async (req, res) => {
     } catch (error) {
         console.error("ZIP Export Error:", error);
         if (!res.headersSent) res.status(500).json({ error: "Failed to generate ZIP file." });
+    }
+});
+
+// ==========================================
+// 📊 FINANCIAL YEAR INVENTORY SNAPSHOT
+// ==========================================
+app.post('/reports/fy-snapshot', verifyToken, async (req, res) => {
+    try {
+        // Calculate the current Indian Financial Year (April to March)
+        const date = new Date();
+        const month = date.getMonth(); // 0 = Jan, 3 = April
+        const year = date.getFullYear();
+        const financial_year = month >= 3 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+
+        // Fetch all active items from the main inventory
+        const [items] = await db.promise().query('SELECT item_id, stock FROM ITEM WHERE is_active = TRUE');
+        
+        if (items.length === 0) return res.status(404).json({ error: "No active items found to snapshot." });
+
+        await db.promise().query('START TRANSACTION');
+
+        const insertQuery = `
+            INSERT INTO item_yearly_ledger (item_id, financial_year, closing_stock, snapshot_date)
+            VALUES (?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE 
+            closing_stock = VALUES(closing_stock),
+            snapshot_date = NOW()
+        `;
+
+        // Loop through all items and save their current stock as the closing stock
+        for (let item of items) {
+            await db.promise().query(insertQuery, [item.item_id, financial_year, item.stock]);
+        }
+
+        await db.promise().query('COMMIT');
+        res.status(200).json({ message: `Closing stock successfully recorded for FY ${financial_year}!` });
+
+    } catch (error) {
+        await db.promise().query('ROLLBACK');
+        console.error("FY Snapshot Error:", error);
+        res.status(500).json({ error: "Failed to create FY stock snapshot." });
+    }
+});
+
+// Fetch the Snapshot History
+app.get('/reports/fy-ledger', verifyToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT l.financial_year, l.closing_stock, l.snapshot_date, i.item_name, i.barcode, i.unit
+            FROM item_yearly_ledger l
+            JOIN ITEM i ON l.item_id = i.item_id
+            ORDER BY l.financial_year DESC, i.item_name ASC
+        `;
+        const [results] = await db.promise().query(query);
+        res.status(200).json(results);
+    } catch (error) {
+        console.error("Fetch FY Ledger Error:", error);
+        res.status(500).json({ error: "Failed to fetch FY ledger data." });
     }
 });

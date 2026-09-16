@@ -9,11 +9,11 @@ export default function BottomNav({ navigation }) {
                 <Image source={require('../assets/images/home.png')} style={styles.navIcon} />
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={() => Alert.alert("Coming Soon", "Reports are under construction!")}>
+            <TouchableOpacity onPress={() => navigation.navigate('Reports')}>
                 <Image source={require('../assets/images/report.png')} style={styles.navIcon} />
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={() => Alert.alert("Coming Soon", "Profile settings are under construction!")}>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                 <Image source={require('../assets/images/profile.png')} style={styles.navIcon} />
             </TouchableOpacity>
         </View> 

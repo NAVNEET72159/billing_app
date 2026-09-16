@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, FlatList, Modal, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, FlatList, Modal, Platform } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/Manufacturing.styles';
 import SearchBar from '../components/SearchBar';
 import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown';
+import CreateGroupModal from '../components/CreateGroupModal';
 
 export default function RawMaterialsScreen({ navigation }) {
     const [rawMaterials, setRawMaterials] = useState([]);
@@ -16,13 +17,19 @@ export default function RawMaterialsScreen({ navigation }) {
     const [isUpdateModalVisible, setUpdateModalVisible] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
     
-    // 🚀 Added 'unit' to both form states
-    const [formData, setFormData] = useState({ item_name: '', purchase_rate: '', stock: '', unit: '' });
-    const [updateData, setUpdateData] = useState({ item_name: '', purchase_rate: '', current_stock: 0, add_stock: '', unit: '' });
+    // Category / Group States
+    const [itemGroups, setItemGroups] = useState([]);
+    const [isGroupModalVisible, setGroupModalVisible] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
+    
+    const [formData, setFormData] = useState({ barcode: '', item_name: '', category: '', purchase_rate: '', stock: '', unit: '' });
+    const [updateData, setUpdateData] = useState({ barcode: '', item_name: '', category: '', purchase_rate: '', current_stock: 0, add_stock: '', unit: '' });
     const [formLoading, setFormLoading] = useState(false);
 
     useEffect(() => {
         fetchRawMaterials();
+        fetchGroups();
     }, []);
 
     const fetchRawMaterials = async () => {
@@ -42,6 +49,60 @@ export default function RawMaterialsScreen({ navigation }) {
         }
     };
 
+    const fetchGroups = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(`${API_URL}/groups`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const formattedGroups = response.data.map(group => ({
+                id: group.item_group_id,
+                name: group.group_name 
+            }));
+            setItemGroups(formattedGroups);
+        } catch (error) {
+            console.error("Groups Fetch Error:", error);
+        }
+    };
+
+    const handleCreateNewGroup = () => {
+        setGroupModalVisible(true);
+    };
+
+    const submitNewGroup = async () => {
+        if (!newGroupName.trim()) {
+            Alert.alert("Error", "Please enter a name for the category.");
+            return;
+        }
+
+        setIsSubmittingGroup(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.post(`${API_URL}/item-groups`, 
+                { group_name: newGroupName }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const newGroupObj = { 
+                name: response.data.group_name, 
+                id: response.data.item_group_id 
+            };
+            setItemGroups(prev => [...prev, newGroupObj]);
+            
+            // 🚀 FIXED: Auto-select the newly created category in the forms
+            setFormData(prev => ({ ...prev, category: newGroupObj.name }));
+            setUpdateData(prev => ({ ...prev, category: newGroupObj.name }));
+            
+            setGroupModalVisible(false);
+            setNewGroupName('');
+        } catch (error) {
+            console.error("Submit Group Error:", error);
+            const errMsg = error.response ? error.response.data.error : "Failed to create category.";
+            Alert.alert("Error", errMsg);
+        } finally {
+            setIsSubmittingGroup(false);
+        }
+    };
+
     const handleAddSubmit = async () => {
         if (!formData.item_name) {
             Alert.alert("Validation", "Item Name is required.");
@@ -52,16 +113,18 @@ export default function RawMaterialsScreen({ navigation }) {
             const token = await AsyncStorage.getItem('userToken');
             await axios.post(`${API_URL}/raw-materials`, 
                 {
+                    barcode: formData.barcode,
                     item_name: formData.item_name,
+                    category: formData.category, // Maps perfectly to DB
                     purchase_rate: parseFloat(formData.purchase_rate) || 0,
                     stock: parseInt(formData.stock) || 0,
-                    unit: formData.unit // 🚀 Send unit to backend
+                    unit: formData.unit 
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
             Alert.alert("Success", "Raw Material added successfully!");
-            setFormData({ item_name: '', purchase_rate: '', stock: '', unit: '' });
+            setFormData({ barcode: '', item_name: '', category: '', purchase_rate: '', stock: '', unit: '' });
             setAddModalVisible(false);
             fetchRawMaterials();
         } catch (error) {
@@ -75,11 +138,13 @@ export default function RawMaterialsScreen({ navigation }) {
     const openUpdateModal = (item) => {
         setSelectedMaterial(item);
         setUpdateData({
+            barcode: item.barcode || '', 
             item_name: item.item_name,
+            category: item.category || '', 
             purchase_rate: String(item.purchase_rate),
             current_stock: parseInt(item.stock) || 0,
             add_stock: '',
-            unit: item.unit || '' // 🚀 Load existing unit into the update form
+            unit: item.unit || '' 
         });
         setUpdateModalVisible(true);
     };
@@ -96,10 +161,12 @@ export default function RawMaterialsScreen({ navigation }) {
 
             await axios.put(`${API_URL}/raw-materials/${selectedMaterial.raw_id}`, 
                 {
+                    barcode: updateData.barcode, 
                     item_name: updateData.item_name,
+                    category: updateData.category, 
                     purchase_rate: parseFloat(updateData.purchase_rate) || 0,
                     stock: finalStock,
-                    unit: updateData.unit // 🚀 Send updated unit to backend
+                    unit: updateData.unit 
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -143,9 +210,15 @@ export default function RawMaterialsScreen({ navigation }) {
         }
     };
 
-    const filteredMaterials = rawMaterials.filter(item => 
-        (item.item_name || '').toLowerCase().includes(searchText.toLowerCase())
-    );
+    const filteredMaterials = rawMaterials.filter(item => {
+        const search = searchText.toLowerCase();
+        return (
+            (item.item_name || '').toLowerCase().includes(search) ||
+            (item.barcode || '').toLowerCase().includes(search) ||
+            (item.category || '').toLowerCase().includes(search) ||
+            String(item.raw_id).includes(search)
+        );
+    });
 
     return (
         <View style={styles.container}>
@@ -158,7 +231,7 @@ export default function RawMaterialsScreen({ navigation }) {
 
             <View style={styles.searchRow}>
                 <SearchBar 
-                    placeholder="Search raw materials..." 
+                    placeholder="Search by name, category, barcode..." 
                     value={searchText}
                     onChangeText={setSearchText}
                     containerStyle={styles.searchContainer} 
@@ -187,11 +260,14 @@ export default function RawMaterialsScreen({ navigation }) {
                                 >
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+                                        <Text style={[styles.itemDetail, { color: '#2c2c4d', fontWeight: 'bold' }]}>
+                                            ID: {item.raw_id}  |  Barcode: {item.barcode || 'N/A'}
+                                        </Text>
+                                        <Text style={styles.itemDetail}>Category: {item.category || 'Uncategorized'}</Text>
                                         <Text style={styles.itemDetail}>Purchase Rate: ₹{item.purchase_rate}</Text>
                                     </View>
                                     <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
                                         <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#7DBA45' }]}>
-                                            {/* 🚀 Unit displayed next to stock */}
                                             STOCK: {item.stock} {item.unit || ''}
                                         </Text>
                                     </View>
@@ -224,9 +300,24 @@ export default function RawMaterialsScreen({ navigation }) {
                     </View>
                     <ScrollView contentContainerStyle={styles.content}>
                         <Text style={styles.title}>Add Raw Material</Text>
+
+                        <Text style={[styles.label, {marginTop: 20}]}>Barcode (Optional):</Text>
+                        <TextInput style={styles.input} placeholder="Scan or type barcode" value={formData.barcode} onChangeText={(text) => setFormData({...formData, barcode: text})} />
                         
-                        <Text style={[styles.label, {marginTop: 20}]}>Item Name:</Text>
+                        <Text style={styles.label}>Item Name:</Text>
                         <TextInput style={styles.input} value={formData.item_name} onChangeText={(text) => setFormData({...formData, item_name: text})} />
+
+                        {/* 🚀 FIXED: Directly tied to category value */}
+                        <Text style={styles.label}>Category:</Text>
+                        <CustomDropdown
+                            data={itemGroups}
+                            value={formData.category}
+                            placeholder="Select a Category..."
+                            onSelect={(selectedItem) => {
+                                setFormData({...formData, category: selectedItem.name});
+                            }}
+                            onCreateNew={handleCreateNewGroup}
+                        />
 
                         <Text style={styles.label}>Purchase Rate (₹):</Text>
                         <TextInput style={styles.input} keyboardType="numeric" value={formData.purchase_rate} onChangeText={(text) => setFormData({...formData, purchase_rate: text})} />
@@ -234,24 +325,17 @@ export default function RawMaterialsScreen({ navigation }) {
                         <Text style={styles.label}>Initial Stock:</Text>
                         <TextInput style={styles.input} keyboardType="numeric" value={formData.stock} onChangeText={(text) => setFormData({...formData, stock: text})} />
 
-                        {/* 🚀 Add Modal Unit Dropdown */}
                         <Text style={styles.label}>Unit:</Text>
                         <CustomDropdown
                             data={['Pks', 'Pcs', 'Kg', 'g', 'm', 'cm', 'L', 'ml']}
                             value={formData.unit}
                             placeholder="Select a unit..."
-                            onSelect={(selectedItem) => {
-                                setFormData({...formData, unit: selectedItem});
-                            }}
+                            onSelect={(selectedItem) => setFormData({...formData, unit: selectedItem})}
                             onCreateNew={() => {
                                 if (typeof window !== 'undefined' && window.prompt) {
                                     const customUnit = window.prompt("Enter a new custom unit (e.g., Box, Dozen):");
-                                    if (customUnit) {
-                                        setFormData({...formData, unit: customUnit});
-                                    }
-                                } else {
-                                    Alert.alert("New Unit", "Custom units can be added here.");
-                                }
+                                    if (customUnit) setFormData({...formData, unit: customUnit});
+                                } else Alert.alert("New Unit", "Custom units can be added here.");
                             }}
                         />
 
@@ -277,9 +361,24 @@ export default function RawMaterialsScreen({ navigation }) {
                     </View>
                     <ScrollView contentContainerStyle={styles.content}>
                         <Text style={styles.title}>Update Material</Text>
+
+                        <Text style={[styles.label, {marginTop: 20}]}>Barcode (Optional):</Text>
+                        <TextInput style={styles.input} placeholder="Scan or type barcode" value={updateData.barcode} onChangeText={(text) => setUpdateData({...updateData, barcode: text})} />
                         
-                        <Text style={[styles.label, {marginTop: 20}]}>Item Name:</Text>
+                        <Text style={styles.label}>Item Name:</Text>
                         <TextInput style={styles.input} value={updateData.item_name} onChangeText={(text) => setUpdateData({...updateData, item_name: text})} />
+
+                        {/* 🚀 FIXED: Directly tied to category value */}
+                        <Text style={styles.label}>Category:</Text>
+                        <CustomDropdown
+                            data={itemGroups}
+                            value={updateData.category}
+                            placeholder="Select a Category..."
+                            onSelect={(selectedItem) => {
+                                setUpdateData({...updateData, category: selectedItem.name});
+                            }}
+                            onCreateNew={handleCreateNewGroup}
+                        />
 
                         <Text style={styles.label}>Purchase Rate (₹):</Text>
                         <TextInput style={styles.input} keyboardType="numeric" value={updateData.purchase_rate} onChangeText={(text) => setUpdateData({...updateData, purchase_rate: text})} />
@@ -289,24 +388,17 @@ export default function RawMaterialsScreen({ navigation }) {
                         <Text style={styles.label}>Add New Stock:</Text>
                         <TextInput style={styles.input} keyboardType="numeric" placeholder="e.g. 50" value={updateData.add_stock} onChangeText={(text) => setUpdateData({...updateData, add_stock: text})} />
 
-                        {/* 🚀 Update Modal Unit Dropdown */}
                         <Text style={styles.label}>Unit:</Text>
                         <CustomDropdown
                             data={['Pks', 'Pcs', 'Kg', 'g', 'm', 'cm', 'L', 'ml']}
                             value={updateData.unit}
                             placeholder="Select a unit..."
-                            onSelect={(selectedItem) => {
-                                setUpdateData({...updateData, unit: selectedItem});
-                            }}
+                            onSelect={(selectedItem) => setUpdateData({...updateData, unit: selectedItem})}
                             onCreateNew={() => {
                                 if (typeof window !== 'undefined' && window.prompt) {
                                     const customUnit = window.prompt("Enter a new custom unit (e.g., Box, Dozen):");
-                                    if (customUnit) {
-                                        setUpdateData({...updateData, unit: customUnit});
-                                    }
-                                } else {
-                                    Alert.alert("New Unit", "Custom units can be added here.");
-                                }
+                                    if (customUnit) setUpdateData({...updateData, unit: customUnit});
+                                } else Alert.alert("New Unit", "Custom units can be added here.");
                             }}
                         />
 
@@ -321,6 +413,17 @@ export default function RawMaterialsScreen({ navigation }) {
                     </ScrollView>
                 </View>
             </Modal>
+
+            {/* 🚀 NEW: CREATE GROUP MODAL */}
+            <CreateGroupModal 
+                visible={isGroupModalVisible}
+                onClose={() => setGroupModalVisible(false)}
+                onSuccess={(newGroupObj) => {
+                    // Instantly updates dropdown list AND form selection
+                    setItemGroups(prev => [...prev, newGroupObj]);
+                    setFormData({ ...formData, item_group_id: newGroupObj.id, item_group_name: newGroupObj.name });
+                }}
+            />
         </View>
     );
 }

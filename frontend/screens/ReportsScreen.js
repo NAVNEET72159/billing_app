@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Platform, Alert } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Print from 'expo-print';
+import * as Print from 'expo-print'; 
 import { styles } from '../styles/ReportScreen.styles';
 import { API_URL } from '../config/api';
-import CustomDropdown from '../components/CustomDropdown';
+import CustomDropdown from '../components/CustomDropdown'; 
 
 export default function ReportsScreen({ navigation }) {
-    const [activeTab, setActiveTab] = useState('Stock');
+    // 🚀 NEW: Added FYLedger tab
+    const [activeTab, setActiveTab] = useState('Stock'); 
+    
     const [stockItems, setStockItems] = useState([]);
     const [topSales, setTopSales] = useState([]);
+    const [fyLedger, setFyLedger] = useState([]);
     const [loading, setLoading] = useState(true);
+
     const [itemGroups, setItemGroups] = useState([]);
     const [selectedGroupId, setSelectedGroupId] = useState(null);
     const [selectedGroupName, setSelectedGroupName] = useState('All Groups');
@@ -19,69 +23,90 @@ export default function ReportsScreen({ navigation }) {
     useEffect(() => {
         fetchGroups();
     }, []);
+
     useEffect(() => {
-        if (activeTab === 'Stock') {
-            fetchStockItems();
-        } else {
-            fetchTopSales();
-        }
+        if (activeTab === 'Stock') fetchStockItems();
+        else if (activeTab === 'Sales') fetchTopSales();
+        else if (activeTab === 'FYLedger') fetchFyLedger();
     }, [activeTab]);
 
-    // ==========================================
-    // 🗂️ FETCH GROUPS FOR FILTER
-    // ==========================================
     const fetchGroups = async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
             const groupRes = await axios.get(`${API_URL}/groups`, { headers: { Authorization: `Bearer ${token}` } });
-            
-            // Add "All Groups" as the default first option
-            const groups = [
-                { id: null, name: 'All Groups' }, 
-                ...groupRes.data.map(g => ({ id: g.item_group_id, name: g.group_name }))
-            ];
+            const groups = [{ id: null, name: 'All Groups' }, ...groupRes.data.map(g => ({ id: g.item_group_id, name: g.group_name }))];
             setItemGroups(groups);
         } catch (error) {
             console.error("Fetch Groups Error:", error);
         }
     };
 
-    // ==========================================
-    // 📦 FETCH LIVE STOCK
-    // ==========================================
     const fetchStockItems = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
-            // Fetch only active items for the report
-            const response = await axios.get(`${API_URL}/items?archived=false`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await axios.get(`${API_URL}/items?archived=false`, { headers: { Authorization: `Bearer ${token}` } });
             setStockItems(response.data);
         } catch (error) {
-            console.error("Stock Fetch Error:", error);
             Alert.alert("Error", "Failed to load stock data.");
         } finally {
             setLoading(false);
         }
     };
 
-    // ==========================================
-    // 📈 FETCH TOP SALES
-    // ==========================================
     const fetchTopSales = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const response = await axios.get(`${API_URL}/reports/monthly-top-items`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await axios.get(`${API_URL}/reports/monthly-top-items`, { headers: { Authorization: `Bearer ${token}` } });
             setTopSales(response.data);
         } catch (error) {
-            console.error("Sales Fetch Error:", error);
             Alert.alert("Error", "Failed to load sales data.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // 🚀 NEW: Fetch Yearly Ledger Data
+    const fetchFyLedger = async () => {
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(`${API_URL}/reports/fy-ledger`, { headers: { Authorization: `Bearer ${token}` } });
+            setFyLedger(response.data);
+        } catch (error) {
+            Alert.alert("Error", "Failed to load FY Ledger data.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 🚀 NEW: Trigger the Snapshot
+    const handleTakeSnapshot = async () => {
+        const warningMsg = "Record closing stock for this Financial Year?\n\nThis permanently saves this year's ledger. If you make more sales and click this again before next April, it will simply update the final numbers for this current year.";
+        
+        const executeSnapshot = async () => {
+            setLoading(true);
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                const response = await axios.post(`${API_URL}/reports/fy-snapshot`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                Platform.OS === 'web' ? window.alert(response.data.message) : Alert.alert("Success", response.data.message);
+                fetchFyLedger(); 
+            } catch (error) {
+                console.error("Snapshot Error:", error);
+                Platform.OS === 'web' ? window.alert("Failed to capture snapshot.") : Alert.alert("Error", "Failed to capture snapshot.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(warningMsg)) executeSnapshot();
+        } else {
+            Alert.alert("FY Stock Snapshot", warningMsg, [
+                { text: "Cancel", style: "cancel" },
+                { text: "Take Snapshot", onPress: executeSnapshot }
+            ]);
         }
     };
 
@@ -89,9 +114,6 @@ export default function ReportsScreen({ navigation }) {
         ? stockItems.filter(item => String(item.item_group_id) === String(selectedGroupId))
         : stockItems;
 
-    // ==========================================
-    // 🖨️ PRINT STOCK REPORT LOGIC
-    // ==========================================
     const handlePrintStockReport = async () => {
         if (filteredStockItems.length === 0) {
             Alert.alert("Empty Report", "There are no items in this group to print.");
@@ -99,7 +121,6 @@ export default function ReportsScreen({ navigation }) {
         }
 
         const reportTitle = selectedGroupId ? `${selectedGroupName} - Stock Report` : `All Item Stock Report`;
-
         const htmlContent = `
             <html>
             <head>
@@ -114,20 +135,14 @@ export default function ReportsScreen({ navigation }) {
                     th { background-color: #f4f4f4; color: #2c2c4d; font-weight: bold; }
                     .center-align { text-align: center; }
                     .right-align { text-align: right; }
-                    .low-stock { color: #DE3931; font-weight: bold; }
-                    .good-stock { color: #7DBA45; font-weight: bold; }
                 </style>
             </head>
             <body>
                 <div class="header">
                     <h1>PYSSUM</h1>
-                    <h3>${reportTitle}</h3>
+                    <h3>${reportTitle}</h3> 
                 </div>
-                
-                <div class="timestamp">
-                    Generated on: ${new Date().toLocaleString()}
-                </div>
-
+                <div class="timestamp">Generated on: ${new Date().toLocaleString()}</div>
                 <table>
                     <thead>
                         <tr>
@@ -145,9 +160,7 @@ export default function ReportsScreen({ navigation }) {
                                 <td>${item.barcode || 'N/A'}</td>
                                 <td>${item.item_name}</td>
                                 <td class="right-align">${parseFloat(item.sale_rate || 0).toFixed(2)}</td>
-                                <td class="center-align ${item.stock <= 10 ? 'low-stock' : 'good-stock'}">
-                                    ${item.stock} ${item.unit || ''}
-                                </td>
+                                <td class="center-align">${item.stock} ${item.unit || ''}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -158,23 +171,16 @@ export default function ReportsScreen({ navigation }) {
 
         try {
             if (Platform.OS === 'web') {
-                const printWindow = window.open('', '_blank', 'width=800,height=800');
-                const parsedDocument = new DOMParser().parseFromString(htmlContent, 'text/html');
-                printWindow.document.replaceChild(
-                    printWindow.document.importNode(parsedDocument.documentElement, true),
-                    printWindow.document.documentElement
-                );
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
                 printWindow.focus();
-                setTimeout(() => {
-                    printWindow.print();
-                    printWindow.close();
-                }, 250);
+                setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
             } else {
                 await Print.printAsync({ html: htmlContent });
             }
         } catch (error) {
             console.error("Print Error:", error);
-            Alert.alert("Error", "Could not generate the print document.");
         }
     };
 
@@ -189,17 +195,14 @@ export default function ReportsScreen({ navigation }) {
 
             {/* TAB NAVIGATION */}
             <View style={styles.tabContainer}>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'Stock' && styles.activeTab]} 
-                    onPress={() => setActiveTab('Stock')}
-                >
+                <TouchableOpacity style={[styles.tab, activeTab === 'Stock' && styles.activeTab]} onPress={() => setActiveTab('Stock')}>
                     <Text style={[styles.tabText, activeTab === 'Stock' && styles.activeTabText]}>Live Stock</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'Sales' && styles.activeTab]} 
-                    onPress={() => setActiveTab('Sales')}
-                >
+                <TouchableOpacity style={[styles.tab, activeTab === 'Sales' && styles.activeTab]} onPress={() => setActiveTab('Sales')}>
                     <Text style={[styles.tabText, activeTab === 'Sales' && styles.activeTabText]}>Top Sales</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.tab, activeTab === 'FYLedger' && styles.activeTab]} onPress={() => setActiveTab('FYLedger')}>
+                    <Text style={[styles.tabText, activeTab === 'FYLedger' && styles.activeTabText]}>FY Ledger</Text>
                 </TouchableOpacity>
             </View>
 
@@ -218,11 +221,7 @@ export default function ReportsScreen({ navigation }) {
                                     data={itemGroups}
                                     value={selectedGroupName}
                                     placeholder="Select Group..."
-                                    onSelect={(item) => {
-                                        setSelectedGroupId(item.id);
-                                        setSelectedGroupName(item.name);
-                                    }}
-                                    onCreateNew={() => Alert.alert("Note", "Use Item Group screen to add new groups.")}
+                                    onSelect={(item) => { setSelectedGroupId(item.id); setSelectedGroupName(item.name); }}
                                 />
                             </View>
                             <View style={styles.actionRow}>
@@ -250,7 +249,7 @@ export default function ReportsScreen({ navigation }) {
                                         </View>
                                     </View>
                                 )}
-                                ListEmptyComponent={<Text style={styles.emptyText}>No items found in inventory.</Text>}
+                                ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
                             />
                         </View>
                     )}
@@ -278,6 +277,43 @@ export default function ReportsScreen({ navigation }) {
                                     </View>
                                 )}
                                 ListEmptyComponent={<Text style={styles.emptyText}>No sales data available yet.</Text>}
+                            />
+                        </View>
+                    )}
+
+                    {/* ========================================= */}
+                    {/* 🚀 NEW: FY LEDGER TAB UI */}
+                    {/* ========================================= */}
+                    {activeTab === 'FYLedger' && (
+                        <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                            <View style={[styles.actionRow, { justifyContent: 'flex-end', marginBottom: 15 }]}>
+                                <TouchableOpacity style={[styles.printBtn, { backgroundColor: '#1565c0' }]} onPress={handleTakeSnapshot}>
+                                    <Text style={styles.printBtnText}>📸 Capture FY Snapshot</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <FlatList 
+                                data={fyLedger}
+                                keyExtractor={(item, index) => index.toString()}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: 50 }}
+                                renderItem={({ item }) => (
+                                    <View style={styles.card}>
+                                        <View style={styles.monthBadge}>
+                                            <Text style={[styles.monthText, {fontSize: 12}]}>{item.financial_year}</Text>
+                                        </View>
+                                        <View style={{ flex: 1, marginLeft: 15 }}>
+                                            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+                                            <Text style={styles.itemDetail}>Captured: {new Date(item.snapshot_date).toLocaleDateString()}</Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                                            <Text style={styles.itemStock}>
+                                                {item.closing_stock} {item.unit || ''}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                )}
+                                ListEmptyComponent={<Text style={styles.emptyText}>No FY snapshots taken yet.</Text>}
                             />
                         </View>
                     )}

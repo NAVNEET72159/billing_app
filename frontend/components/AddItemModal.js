@@ -6,6 +6,7 @@ import { styles } from '../styles/AddItemModal.styles';
 import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown';
 import * as ImagePicker from 'expo-image-picker';
+import CreateGroupModal from './CreateGroupModal';
 
 export default function AddItemModal({ visible, onClose, onAddSuccess, initialBarcode }) {
     const [isGroupModalVisible, setGroupModalVisible] = useState(false);
@@ -291,51 +292,15 @@ export default function AddItemModal({ visible, onClose, onAddSuccess, initialBa
                 </ScrollView>
             </View>
 
-            <Modal visible={isGroupModalVisible} animationType="fade" transparent={true}>
-                <View style={styles.groupModalOverlay}>
-                    <View style={styles.groupModalContainer}>
-                        
-                        <Text style={styles.groupModalTitle}>Create Item Group</Text>
-                        <Text style={styles.groupModalLabelBold}>
-                            Item Group ID: <Text style={{fontWeight: 'normal', color: '#666'}}>(Auto-Generated)</Text>
-                        </Text>
-                        
-                        <Text style={styles.groupModalLabel}>Item Name:</Text>
-                        <TextInput 
-                            style={styles.groupModalInput}
-                            value={newGroupName}
-                            onChangeText={setNewGroupName}
-                            placeholder="e.g., Electronics, Dairy..."
-                            placeholderTextColor="#888"
-                            autoFocus={true}
-                        />
-
-                        <View style={styles.groupModalBtnRow}>
-                            <TouchableOpacity 
-                                style={styles.groupModalCancelBtn}
-                                onPress={() => {
-                                    setGroupModalVisible(false);
-                                    setNewGroupName('');
-                                }}
-                            >
-                                <Text style={styles.groupModalBtnText}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                style={styles.groupModalSubmitBtn}
-                                onPress={submitNewGroup}
-                                disabled={isSubmittingGroup}
-                            >
-                                {isSubmittingGroup ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={styles.groupModalBtnText}>Submit</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <CreateGroupModal 
+                visible={isGroupModalVisible}
+                onClose={() => setGroupModalVisible(false)}
+                onSuccess={(newGroupObj) => {
+                    // Instantly updates dropdown list AND form selection
+                    setItemGroups(prev => [...prev, newGroupObj]);
+                    setFormData({ ...formData, item_group_id: newGroupObj.id, item_group_name: newGroupObj.name });
+                }}
+            />
         </Modal>
     );
 }
