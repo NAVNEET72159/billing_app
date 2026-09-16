@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/NewBillScreen.styles';
@@ -21,28 +22,25 @@ export default function NewBillScreen({ navigation }) {
     const [selectedCustomerInfo, setSelectedCustomerInfo] = useState(null);
     const [isConfirmationVisible, setConfirmationVisible] = useState(false);
     const [isCartVisible, setIsCartVisible] = useState(false);
+
     useEffect(() => {
         fetchInventory();
         fetchCustomers();
     }, []);
-    const fetchCustomers = async () => {
-        console.log("Started this function: ")
-        try {
-            console.log("Started try: ")
-            const token = await AsyncStorage.getItem('userToken');
-            console.log("Checkpoint 1: Token fetched successfully!");
 
-            console.log(`Checkpoint 2: Attempting to connect to ${API_URL}...`);
+    const fetchCustomers = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
             const response = await axios.get(`${API_URL}/customers`, {
                 headers: { Authorization: `Bearer ${token}`},
                 timeout: 5000
             });
-            console.log("Checkpoint 3: BACKEND RESPONSE RECEIVED!", response.data);
             setCustomers(response.data);
         } catch (error) {
             console.error("Error fetching customers:", error);
         }
     };
+
     const fetchInventory = async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
@@ -57,24 +55,17 @@ export default function NewBillScreen({ navigation }) {
             setLoading(false);
         }
     };
+
     const addToCart = (item) => {
         if (item.stock <= 0) {
             const errorMsg = `${item.item_name} is unavailable in the inventory (Out of Stock).`;
-            if (Platform.OS === 'web') {
-                window.alert(errorMsg);
-            } else {
-                Alert.alert("Item Unavailable", errorMsg);
-            }
+            Platform.OS === 'web' ? window.alert(errorMsg) : Alert.alert("Item Unavailable", errorMsg);
             return;
         }
         const existingCartItem = cart.find(c => c.item_id === item.item_id);
         if (existingCartItem && existingCartItem.quantity >= item.stock) {
             const limitMsg = `You cannot add more ${item.item_name}. Only ${item.stock} left in stock.`;
-            if (Platform.OS === 'web') {
-                window.alert(limitMsg);
-            } else {
-                Alert.alert("Stock Limit Reached", limitMsg);
-            }
+            Platform.OS === 'web' ? window.alert(limitMsg) : Alert.alert("Stock Limit Reached", limitMsg);
             return;
         }
         setCart(currentCart => {
@@ -88,6 +79,7 @@ export default function NewBillScreen({ navigation }) {
             }
         });
     };
+
     const handleManualQuantity = (item, text) => {
         if (text === '') {
             setCart(prev => prev.map(c => c.item_id === item.item_id ? { ...c, quantity: '' } : c));
@@ -97,11 +89,7 @@ export default function NewBillScreen({ navigation }) {
         if (isNaN(qty)) return;
         if (qty > item.stock) {
             const limitMsg = `You cannot add ${qty} ${item.item_name}. Only ${item.stock} left in stock.`;
-            if (Platform.OS === 'web') {
-                window.alert(limitMsg);
-            } else {
-                Alert.alert("Stock Limit Reached", limitMsg);
-            }
+            Platform.OS === 'web' ? window.alert(limitMsg) : Alert.alert("Stock Limit Reached", limitMsg);
             setCart(prev => prev.map(c => c.item_id === item.item_id ? { ...c, quantity: item.stock } : c));
             return;
         }
@@ -111,6 +99,7 @@ export default function NewBillScreen({ navigation }) {
         }
         setCart(prev => prev.map(c => c.item_id === item.item_id ? { ...c, quantity: qty } : c));
     };
+
     const removeFromCart = (itemId) => {
         setCart(currentCart => {
             const existingItem = currentCart.find(cartItem => cartItem.item_id === itemId);
@@ -123,12 +112,14 @@ export default function NewBillScreen({ navigation }) {
             }
         });
     };
+
     const grandTotal = cart.reduce((sum, item) => sum + (item.sale_rate * item.quantity), 0);
+    
     const handleProceedClick = async () => {
         fetchCustomers();
-        console.log("Fetching Successful: ")
         setCustomerModalVisible(true);
     };
+
     const handleCustomerSelect = (customerData) => {
         let fullCustomerObj = null;
         if (typeof customerData === 'object' && customerData !== null) {
@@ -146,6 +137,7 @@ export default function NewBillScreen({ navigation }) {
             }
         }, 300);
     };
+
     const executeSale = async () => {
         setConfirmationVisible(false);
         setLoading(true);
@@ -183,18 +175,16 @@ export default function NewBillScreen({ navigation }) {
                     generateInvoicePDF(cart, selectedCustomerInfo, grandTotal, generatedInvoiceNumber);
                 }
                 clearCartAndReset();
-                } else {
-                    
-                    Alert.alert(
-                        'Payment Successful!',
-                        `Invoice ${generatedInvoiceNumber} has been saved. Do you want to download the PDF?`,
-                        [
-                            { text: "No, Start New Bill", style: "cancel", onPress: () => clearCartAndReset() },
-                            { text: "Yes, Download PDF", onPress: () => {
-                                generateInvoicePDF(cart, selectedCustomerInfo, grandTotal, generatedInvoiceNumber);
-                                clearCartAndReset();
-                            }
-                        }
+            } else {
+                Alert.alert(
+                    'Payment Successful!',
+                    `Invoice ${generatedInvoiceNumber} has been saved. Do you want to download the PDF?`,
+                    [
+                        { text: "No, Start New Bill", style: "cancel", onPress: () => clearCartAndReset() },
+                        { text: "Yes, Download PDF", onPress: () => {
+                            generateInvoicePDF(cart, selectedCustomerInfo, grandTotal, generatedInvoiceNumber);
+                            clearCartAndReset();
+                        }}
                     ]
                 );
             }
@@ -211,42 +201,6 @@ export default function NewBillScreen({ navigation }) {
         fetchInventory();
     };
 
-    const handleCheckout = async (selectedCustomerId) => {
-        const formattedItems = cart.map(item => {
-            const amount = item.sale_rate * item.quantity;
-            const taxAmount = amount * (item.gst_percentage / 100);
-            return {
-                item_id: item.item_id,
-                sale_rate: item.sale_rate,
-                quantity: item.quantity,
-                tax_amount: taxAmount,
-                amount: amount
-            };
-        });
-        const totalTax = formattedItems.reduce((sum, item) => sum + item.tax_amount, 0);
-        const checkoutData = {
-            customer_id: selectedCustomerId,
-            items: formattedItems,
-            total_tax_amount: totalTax,
-            grand_total: grandTotal,
-            payment_method: "UPI"
-        };
-        try {
-            setLoading(true);
-            const token = await AsyncStorage.getItem('userToken');
-            const response = await axios.post(`${API_URL}/checkout`, checkoutData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCart([]);
-            fetchInventory(); 
-            Alert.alert('Payment Successful!', `Invoice: ${response.data.invoice_number}`);
-        } catch (error) {
-            console.error("Checkout Error:", error);
-            Alert.alert('Checkout Failed', 'Could not process the transaction.');
-        } finally {
-            setLoading(false);
-        }
-    };
     const filteredInventoryText = inventory.filter(item => 
         item.item_name.toLowerCase().includes(itemSearchText.toLowerCase())
     );
@@ -257,37 +211,33 @@ export default function NewBillScreen({ navigation }) {
     
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Header />
-            </View>
+            <StatusBar hidden={true} />
+            <Header />
             
-            <View style={styles.titleRow}>
-                <Text style={styles.pageTitle}>New Bill</Text>
-                <TouchableOpacity style={styles.cartIconBtn} onPress={() => setIsCartVisible(true)}>
-                    <Text style={{ fontSize: 32 }}>🛒</Text>
-                    {cart.length > 0 && (
-                        <View style={styles.cartBadge}>
-                            <Text style={styles.cartBadgeText}>{cart.length}</Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+            {/* 🚀 NEW: Sleek Hero Banner & Search Wrapper */}
+            <View style={styles.heroBanner}>
+                <View style={styles.heroHeader}>
+                    <Text style={styles.pageTitle}>New Bill</Text>
+                    <Text style={styles.pageSubtitle}>Tap items to build the invoice</Text>
+                </View>
+                <View style={styles.searchWrapper}>
+                    <SearchBar 
+                        placeholder="Search items by name or barcode..." 
+                        value={itemSearchText}
+                        onChangeText={setItemSearchText}
+                        containerStyle={styles.searchContainer} 
+                    />
+                </View>
             </View>
 
-            <View style={styles.searchContainer}>
-                <SearchBar 
-                    placeholder="Search items by name..." 
-                    value={itemSearchText}
-                    onChangeText={setItemSearchText}
-                    containerStyle={{ marginHorizontal: 20, marginVertical: 15 }} 
-                />
-            </View>
+            {/* 🚀 LIST VIEW */}
             {loading ? (
-                <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
+                <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
             ) : (
                 <FlatList 
                     data={filteredInventory}
                     keyExtractor={(item) => item.item_id.toString()}
-                    contentContainerStyle={{ paddingBottom: 150 }} 
+                    contentContainerStyle={styles.listContent} 
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         const cartItem = cart.find(c => c.item_id === item.item_id);
@@ -297,7 +247,6 @@ export default function NewBillScreen({ navigation }) {
                                 item={{
                                     name: item.item_name,
                                     description: `Stock: ${item.stock} ${item.unit || ''} | ₹${item.sale_rate}`,
-                                    // 👇 Just pass the raw string from the database
                                     image_url: item.image_url,
                                 }} 
                                 quantity={quantityInCart}
@@ -306,20 +255,35 @@ export default function NewBillScreen({ navigation }) {
                             />
                         );
                     }}
-                    ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 20}}>No items found.</Text>}
+                    ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
                 />
             )}
-            <Modal visible={isCartVisible} animationType="fade" transparent={true}>
-                <TouchableOpacity 
-                    style={styles.cartOverlay} 
-                    activeOpacity={1} 
-                    onPress={() => setIsCartVisible(false)}
-                >
-                    <TouchableOpacity activeOpacity={1} style={styles.sideCartPanel}>
+
+            {/* 🚀 NEW: Sticky Floating Checkout Button */}
+            {cart.length > 0 && (
+                <View style={styles.floatingCartWrapper}>
+                    <TouchableOpacity style={styles.floatingCartBtn} onPress={() => setIsCartVisible(true)} activeOpacity={0.9}>
+                        <View style={styles.floatingCartLeft}>
+                            <View style={styles.cartBadge}>
+                                <Text style={styles.cartBadgeText}>{cart.length}</Text>
+                            </View>
+                            <Text style={styles.floatingCartTitle}>View Cart</Text>
+                        </View>
+                        <Text style={styles.floatingCartTotal}>₹{grandTotal.toFixed(2)} ➔</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {/* 🚀 UPGRADED: Side Cart Drawer */}
+            <Modal visible={isCartVisible} animationType="slide" transparent={true}>
+                <View style={styles.cartOverlay}>
+                    <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setIsCartVisible(false)} />
+                    
+                    <View style={styles.sideCartPanel}>
                         <View style={styles.sideCartHeader}>
-                            <Text style={styles.sideCartTitle}>Cart Items</Text>
-                            <TouchableOpacity onPress={() => setIsCartVisible(false)}>
-                                <Text style={styles.closeCartIcon}>✖</Text>
+                            <Text style={styles.sideCartTitle}>Current Order</Text>
+                            <TouchableOpacity style={styles.closeCartBtn} onPress={() => setIsCartVisible(false)}>
+                                <Text style={styles.closeCartIcon}>×</Text>
                             </TouchableOpacity>
                         </View>
                         
@@ -327,26 +291,20 @@ export default function NewBillScreen({ navigation }) {
                             data={cart}
                             keyExtractor={(item) => item.item_id.toString()}
                             showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ padding: 20 }}
                             renderItem={({ item }) => (
                                 <View style={styles.sideCartItem}>
-                                    
                                     <View style={styles.sideCartItemTop}>
                                         <Text style={styles.sideCartItemName}>{item.item_name}</Text>
                                         <Text style={styles.sideCartItemPrice}>₹{item.sale_rate * (Number(item.quantity) || 0)}</Text>
                                     </View>
                                     
                                     <View style={styles.sideCartItemBottom}>
-                                        <Text style={styles.sideCartQtyLabel}>Quantity:</Text>
-                                        
-                                        {/* Manual Text Box Controls */}
+                                        <Text style={styles.sideCartQtyLabel}>Qty:</Text>
                                         <View style={styles.qtyControlRow}>
-                                            <TouchableOpacity 
-                                                style={styles.smallQtyBtn} 
-                                                onPress={() => handleManualQuantity(item, String((Number(item.quantity) || 0) - 1))}
-                                            >
+                                            <TouchableOpacity style={styles.smallQtyBtn} onPress={() => handleManualQuantity(item, String((Number(item.quantity) || 0) - 1))}>
                                                 <Text style={styles.smallQtyText}>-</Text>
                                             </TouchableOpacity>
-                                            
                                             <TextInput 
                                                 style={styles.smallQtyInput}
                                                 keyboardType="numeric"
@@ -354,37 +312,37 @@ export default function NewBillScreen({ navigation }) {
                                                 onChangeText={(text) => handleManualQuantity(item, text)}
                                                 selectTextOnFocus={true}
                                             />
-                                            
-                                            <TouchableOpacity 
-                                                style={styles.smallQtyBtn} 
-                                                onPress={() => handleManualQuantity(item, String((Number(item.quantity) || 0) + 1))}
-                                            >
+                                            <TouchableOpacity style={styles.smallQtyBtn} onPress={() => handleManualQuantity(item, String((Number(item.quantity) || 0) + 1))}>
                                                 <Text style={styles.smallQtyText}>+</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
-
                                 </View>
                             )}
-                            ListEmptyComponent={<Text style={styles.emptyCartText}>No items added yet.</Text>}
+                            ListEmptyComponent={<Text style={styles.emptyCartText}>Cart is empty.</Text>}
                         />
+
                         {cart.length > 0 && (
                             <View style={styles.sideCartFooter}>
-                                <Text style={styles.sideCartTotalText}>Total: ₹{grandTotal.toFixed(2)}</Text>
+                                <View style={styles.sideCartFooterRow}>
+                                    <Text style={styles.sideCartTotalLabel}>Grand Total</Text>
+                                    <Text style={styles.sideCartTotalValue}>₹{grandTotal.toFixed(2)}</Text>
+                                </View>
                                 <TouchableOpacity 
                                     style={styles.proceedBtn} 
                                     onPress={() => {
-                                        setIsCartVisible(false); // Close modal first
-                                        handleProceedClick();    // Then open customer modal
+                                        setIsCartVisible(false);
+                                        handleProceedClick(); 
                                     }}
                                 >
-                                    <Text style={styles.proceedBtnText}>Proceed</Text>
+                                    <Text style={styles.proceedBtnText}>PROCEED TO CUSTOMER</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
-                    </TouchableOpacity>
-                </TouchableOpacity>
+                    </View>
+                </View>
             </Modal>
+
             <Modal visible={isCustomerModalVisible} animationType="slide" transparent={false}>
                 <CustomerPanel 
                     customers={customers} 
@@ -393,6 +351,7 @@ export default function NewBillScreen({ navigation }) {
                     refreshCustomers={fetchCustomers}
                 />
             </Modal>
+            
             <InvoiceConfirmationModal 
                 visible={isConfirmationVisible}
                 cart={cart}

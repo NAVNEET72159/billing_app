@@ -15,6 +15,6 @@ if (Platform.OS === 'web') {
     }
 }
 
-export const API_URL = `http://${backendIP}:5000`;
+export const API_URL = `https://your-vercel-app-url.vercel.app`;
 
 console.log("🚀 Auto-Resolved API URL:", API_URL);

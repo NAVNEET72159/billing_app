@@ -1111,3 +1111,5 @@ app.get('/reports/fy-ledger', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch FY ledger data." });
     }
 });
+
+app.use(cors({ origin: 'https://your-vercel-app-url.vercel.app' }));
