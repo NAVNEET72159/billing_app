@@ -15,6 +15,6 @@ if (Platform.OS === 'web') {
     }
 }
 
-export const API_URL = `https://billing-server-ljj4.onrender.com`;
+export const API_URL = `https://billing-server-tjj4.onrender.com`;
 
 console.log("🚀 Auto-Resolved API URL:", API_URL);
