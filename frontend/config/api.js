@@ -15,6 +15,6 @@ if (Platform.OS === 'web') {
     }
 }
 
-export const API_URL = `https://your-vercel-app-url.vercel.app`;
+export const API_URL = `https://billing-server-ljj4.onrender.com`;
 
 console.log("🚀 Auto-Resolved API URL:", API_URL);
