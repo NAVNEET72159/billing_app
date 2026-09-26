@@ -137,7 +137,7 @@ app.get('/items', verifyToken, (req, res) => {
            FROM ITEM WHERE is_active = TRUE`;
     db.query(query, (err, results) => {
         if (err) 
-            if (err) return res.status(500).json({ error: err.message });
+            return res.status(500).json({ error: err.message });
         res.json(results);
     });
 });

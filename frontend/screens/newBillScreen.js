@@ -11,6 +11,7 @@ import CustomerPanel from '../components/CustomerPanel';
 import InvoiceConfirmationModal from '../components/InvoiceConfirmationModal';
 import { generateInvoicePDF } from '../components/utils/InvoicePDF';
 import { API_URL } from '../config/api';
+import CustomerSidebar from '../components/CustomerSidebar';
 
 export default function NewBillScreen({ navigation }) {
     const [inventory, setInventory] = useState([]);
@@ -22,6 +23,7 @@ export default function NewBillScreen({ navigation }) {
     const [selectedCustomerInfo, setSelectedCustomerInfo] = useState(null);
     const [isConfirmationVisible, setConfirmationVisible] = useState(false);
     const [isCartVisible, setIsCartVisible] = useState(false);
+    const [customerSearchText, setCustomerSearchText] = useState('');
 
     useEffect(() => {
         fetchInventory();
@@ -344,11 +346,11 @@ export default function NewBillScreen({ navigation }) {
             </Modal>
 
             <Modal visible={isCustomerModalVisible} animationType="slide" transparent={false}>
-                <CustomerPanel 
+                <CustomerSidebar 
+                    visible={isCustomerModalVisible} 
                     customers={customers} 
                     onSelectCustomer={handleCustomerSelect} 
-                    onClose={() => setCustomerModalVisible(false)}
-                    refreshCustomers={fetchCustomers}
+                    onClose={() => setCustomerModalVisible(false)} 
                 />
             </Modal>
             
