@@ -201,6 +201,18 @@ export default function CustomerScreen({ navigation }) {
                 />
             )}
 
+            <View style={styles.floatingCartWrapper}>
+                <TouchableOpacity style={styles.floatingCartBtn} onPress={() => setAddModalVisible(true)} activeOpacity={0.9}>
+                    <View style={styles.floatingCartLeft}>
+                    <View style={styles.cartBadge}>
+                        <Text style={styles.cartBadgeText}>+</Text>
+                    </View>
+                    <Text style={styles.floatingCartTitle}>New Customer</Text>
+                </View>
+                <Text style={styles.floatingCartTotal}>Add ➔</Text>
+                </TouchableOpacity>
+            </View>
+
             <AddCustomerModal 
                 visible={isAddModalVisible}
                 onClose={() => setAddModalVisible(false)}

@@ -41,64 +41,75 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
     if (!visible) return null;
 
     return (
-        <Modal visible={visible} animationType="slide" transparent={false}>
-            <View style={styles.container}>
-                <Text style={styles.headerTitle}>Add Customer</Text>
+        <Modal visible={visible} animationType="slide" transparent={true}>
+            <View style={styles.overlay}>
+                {/* Invisible background button to close modal when clicking outside */}
+                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+            
+                <View style={styles.sidebar}>
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Add New Customer</Text>
+                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                            <Text style={styles.closeIcon}>×</Text>
+                        </TouchableOpacity>
+                    </View>
                 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     
-                    <Text style={styles.staticText}>
-                        <Text style={{fontWeight: '900', color: '#000'}}>Customer ID: </Text>
-                        This is to be from the database
-                    </Text>
+                        <Text style={styles.staticText}>
+                            <Text style={{fontWeight: '900', color: '#000'}}>Customer ID: </Text>
+                            This is to be from the database
+                        </Text>
 
-                    <Text style={styles.label}>Customer Name:</Text>
-                    <TextInput style={styles.input} value={formData.customer_name} onChangeText={(text) => setFormData({...formData, customer_name: text})} />
+                        <Text style={styles.label}>Customer Name:</Text>
+                        <TextInput style={styles.input} value={formData.customer_name} onChangeText={(text) => setFormData({...formData, customer_name: text})} />
                     
-                    {/* Side-by-Side Row for Code and Phone Number */}
-                    <View style={styles.row}>
-                        <View style={styles.codeColumn}>
-                            <Text style={styles.label}>Code</Text>
-                            <TextInput style={styles.input} value={formData.code} onChangeText={(text) => setFormData({...formData, code: text})} />
+                        {/* Side-by-Side Row for Code and Phone Number */}
+                        <View style={styles.row}>
+                            <View style={styles.codeColumn}>
+                                <Text style={styles.label}>Code</Text>
+                                <TextInput style={styles.input} value={formData.code} onChangeText={(text) => setFormData({...formData, code: text})} />
+                            </View>
+                            <View style={styles.phoneColumn}>
+                                <Text style={styles.label}>Phone Number:</Text>
+                                <TextInput style={styles.input} keyboardType="phone-pad" value={formData.phone_number} onChangeText={(text) => setFormData({...formData, phone_number: text})} />
+                            </View>
                         </View>
-                        <View style={styles.phoneColumn}>
-                            <Text style={styles.label}>Phone Number:</Text>
-                            <TextInput style={styles.input} keyboardType="phone-pad" value={formData.phone_number} onChangeText={(text) => setFormData({...formData, phone_number: text})} />
+
+                        <Text style={styles.label}>Alternate Number</Text>
+                        <TextInput style={styles.input} keyboardType="phone-pad" value={formData.alternate_number} onChangeText={(text) => setFormData({...formData, alternate_number: text})} />
+
+                        <Text style={styles.label}>E-Mail</Text>
+                        <TextInput style={styles.input} keyboardType="email-address" autoCapitalize="none" value={formData.email} onChangeText={(text) => setFormData({...formData, email: text})} />
+
+                        <Text style={styles.label}>Current Address:</Text>
+                        <TextInput style={styles.input} value={formData.current_address} onChangeText={(text) => setFormData({...formData, current_address: text})} />
+
+                        <Text style={styles.label}>Permanent Address:</Text>
+                        <TextInput style={styles.input} value={formData.permanent_address} onChangeText={(text) => setFormData({...formData, permanent_address: text})} />
+
+                        <Text style={styles.label}>City:</Text>
+                        <TextInput style={styles.input} value={formData.city} onChangeText={(text) => setFormData({...formData, city: text})} />
+
+                        <Text style={styles.label}>State:</Text>
+                        <TextInput style={styles.input} value={formData.state} onChangeText={(text) => setFormData({...formData, state: text})} />
+
+                        <Text style={styles.label}>Pincode:</Text>
+                        <TextInput style={styles.input} keyboardType="numeric" value={formData.pincode} onChangeText={(text) => setFormData({...formData, pincode: text})} />
+
+                        {/* Bottom Action Buttons */}
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onClose} disabled={loading}>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.btn, styles.submitBtn]} onPress={handleSave} disabled={loading}>
+                                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Submit</Text>}
+                            </TouchableOpacity>
                         </View>
-                    </View>
-
-                    <Text style={styles.label}>Alternate Number</Text>
-                    <TextInput style={styles.input} keyboardType="phone-pad" value={formData.alternate_number} onChangeText={(text) => setFormData({...formData, alternate_number: text})} />
-
-                    <Text style={styles.label}>E-Mail</Text>
-                    <TextInput style={styles.input} keyboardType="email-address" autoCapitalize="none" value={formData.email} onChangeText={(text) => setFormData({...formData, email: text})} />
-
-                    <Text style={styles.label}>Current Address:</Text>
-                    <TextInput style={styles.input} value={formData.current_address} onChangeText={(text) => setFormData({...formData, current_address: text})} />
-
-                    <Text style={styles.label}>Permanent Address:</Text>
-                    <TextInput style={styles.input} value={formData.permanent_address} onChangeText={(text) => setFormData({...formData, permanent_address: text})} />
-
-                    <Text style={styles.label}>City:</Text>
-                    <TextInput style={styles.input} value={formData.city} onChangeText={(text) => setFormData({...formData, city: text})} />
-
-                    <Text style={styles.label}>State:</Text>
-                    <TextInput style={styles.input} value={formData.state} onChangeText={(text) => setFormData({...formData, state: text})} />
-
-                    <Text style={styles.label}>Pincode:</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={formData.pincode} onChangeText={(text) => setFormData({...formData, pincode: text})} />
-
-                    {/* Bottom Action Buttons */}
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onClose} disabled={loading}>
-                            <Text style={styles.cancelBtnText}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.btn, styles.submitBtn]} onPress={handleSave} disabled={loading}>
-                            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Submit</Text>}
-                        </TouchableOpacity>
-                    </View>
                     
-                </ScrollView>
+                    </ScrollView>
+                </View>
             </View>
         </Modal>
     );
