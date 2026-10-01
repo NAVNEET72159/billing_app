@@ -58,5 +58,57 @@ export const styles = StyleSheet.create({
         fontWeight: '900',
         letterSpacing: 1,
     },
-    emptyText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' }
+    emptyText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
+    floatingCartWrapper: {
+        position: 'absolute',
+        bottom: 30,
+        left: 0,
+        right: 0,
+        alignItems: 'center', // Centers the button horizontally
+        zIndex: 10,
+    },
+    floatingCartBtn: {
+        flexDirection: 'row',
+        backgroundColor: '#1a1a1a', // Sleek dark theme
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '60%',
+        maxWidth: 400,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    floatingCartLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cartBadge: {
+        backgroundColor: '#00D26A',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    cartBadgeText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    floatingCartTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    floatingCartTotal: {
+        color: '#00D26A',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 });
