@@ -1,6 +1,36 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-end', // 🚀 THIS FIXES THE LAYOUT GLITCH
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    sidebar: {
+        width: Platform.OS === 'web' ? 450 : '85%', 
+        backgroundColor: '#f8f9fa',
+        height: '100%',
+        borderTopLeftRadius: 24,
+        borderBottomLeftRadius: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: -5, height: 0 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 10,
+        display: 'flex',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 25,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        marginTop: Platform.OS === 'web' ? 0 : 40, // Adds safe space for mobile notch
+    },
     container: { 
         flex: 1, 
         backgroundColor: '#f5f5f5', 
