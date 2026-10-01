@@ -125,15 +125,6 @@ export default function CustomerScreen({ navigation }) {
                             onChangeText={setSearchText}
                             containerStyle={styles.searchContainer} 
                         />
-                        {/* Notice the className applied here for web hovering */}
-                        <TouchableOpacity 
-                            style={styles.newButton} 
-                            onPress={() => setAddModalVisible(true)} 
-                            activeOpacity={0.8}
-                            className="hover-btn"
-                        >
-                            <Text style={styles.newButtonText}>+ New</Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
             </View>

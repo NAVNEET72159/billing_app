@@ -45,7 +45,7 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
             <View style={styles.overlay}>
                 {/* Invisible background button to close modal when clicking outside */}
                 <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
-            
+
                 <View style={styles.sidebar}>
                     {/* Header */}
                     <View style={styles.header}>
@@ -54,8 +54,9 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
                             <Text style={styles.closeIcon}>×</Text>
                         </TouchableOpacity>
                     </View>
-                
-                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+                    {/* ⚠️ PASTE YOUR EXISTING TEXT INPUTS HERE ⚠️ */}
+                    <ScrollView contentContainerStyle={styles.formContainer} showsVerticalScrollIndicator={false}>
                     
                         <Text style={styles.staticText}>
                             <Text style={{fontWeight: '900', color: '#000'}}>Customer ID: </Text>
@@ -107,8 +108,14 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
                                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Submit</Text>}
                             </TouchableOpacity>
                         </View>
-                    
                     </ScrollView>
+
+                {/* Footer / Submit Button */}
+                    <View style={styles.footer}>
+                        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}> {/* Use your existing save function here */}
+                            <Text style={styles.saveBtnText}>SAVE CUSTOMER</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </Modal>
