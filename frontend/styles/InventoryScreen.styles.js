@@ -130,5 +130,125 @@ export const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '900',
         letterSpacing: 1,
+    },
+    heroBanner: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    marginBottom: 10,
+    },
+    heroHeader: {
+        marginBottom: 15,
+    },
+    pageSubtitle: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
+    },
+    searchWrapper: {
+        width: '100%',
+    },
+    searchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+    },
+    searchContainer: {
+        flex: 1,
+        marginRight: 15,
+    },
+    newButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        },
+    newButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    cardContentWrapper: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    cardLeft: {
+        flex: 1,
+        paddingRight: 15,
+    },
+    itemName: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1a1a1a',
+        marginBottom: 12,
+    },
+    priceGrid: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        gap: 20, // Adds space between the price columns
+    },
+    priceColumn: {
+        flexDirection: 'column',
+    },
+    priceLabel: {
+        fontSize: 11,
+        color: '#888',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 4,
+    },
+    priceValue: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#333',
+    },
+    cardRight: {
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    imageContainer: {
+        width: 60,
+        height: 60,
+        borderRadius: 12,
+        backgroundColor: '#f8f9fa',
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#eee',
+        marginBottom: 8,
+    },
+    itemImage: {
+        width: '100%',
+        height: '100%',
+    },
+    placeholderImage: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stockBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+    },
+    stockText: {
+        fontSize: 12,
+        fontWeight: 'bold',
     }
 });

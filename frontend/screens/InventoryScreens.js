@@ -124,99 +124,143 @@ export default function InventoryScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            {/* Header Section */}
+            {/* 🚀 WEB-ONLY HOVER ANIMATIONS */}
+            {Platform.OS === 'web' && (
+                <style type="text/css">{`
+                    .hover-card {
+                        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                    }
+                    .hover-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important;
+                        border-color: #00D26A !important;
+                    }
+                    .hover-btn {
+                        transition: all 0.2s ease;
+                    }
+                    .hover-btn:hover {
+                        transform: scale(1.05);
+                    }
+                `}</style>
+            )}
+
             <View style={styles.headerWrapper}>
                 <Header />
             </View>
-            
-            <Text style={styles.pageTitle}>Inventory</Text>
-            <View style={styles.searchRow}>
-                <SearchBar 
-                    placeholder="Search items by name..." 
-                    value={searchText}
-                    onChangeText={setSearchText}
-                    containerStyle={styles.searchContainer} 
-                />
-                <TouchableOpacity 
-                    style={[styles.newButton, { backgroundColor: showArchived ? '#e53935' : '#7cb342', marginRight: 10 }]}
-                    onPress={() => setShowArchived(!showArchived)}
-                >
-                    <Text style={styles.newButtonText}>{showArchived ? 'View Active' : 'View Archived'}</Text>
-                </TouchableOpacity>
-                {!showArchived && (
-                    <TouchableOpacity 
-                        style={styles.newButton}
-                        onPress={() => setAddModalVisible(true)}
-                    >
-                        <Text style={styles.newButtonText}>New +</Text>
-                    </TouchableOpacity>
-                )}
+        
+            {/* 🚀 Dashboard-Style Hero Banner */}
+            <View style={styles.heroBanner}>
+                <View style={styles.heroHeader}>
+                    <Text style={styles.pageTitle}>Inventory</Text>
+                    <Text style={styles.pageSubtitle}>Manage your products and stock</Text>
+                </View>
+                <View style={styles.searchWrapper}>
+                    <View style={styles.searchRow}>
+                        <SearchBar 
+                            placeholder="Search items by name..." 
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            containerStyle={styles.searchContainer} 
+                        />
+                        <TouchableOpacity 
+                            style={[styles.newButton, { backgroundColor: showArchived ? '#e53935' : '#1a1a1a', marginRight: 10 }]}
+                            onPress={() => setShowArchived(!showArchived)}
+                            className="hover-btn"
+                        >
+                            <Text style={styles.newButtonText}>{showArchived ? 'Active' : 'Archived'}</Text>
+                        </TouchableOpacity>
+                        {!showArchived && (
+                            <TouchableOpacity 
+                                style={[styles.newButton, { backgroundColor: '#00D26A' }]}
+                                onPress={() => setAddModalVisible(true)}
+                                className="hover-btn"
+                            >
+                                <Text style={styles.newButtonText}>+ New</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
             </View>
 
             {loading ? (
-                <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
+                <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
             ) : (
                 <FlatList 
                     data={filteredInventory}
                     keyExtractor={(item, index) => item.item_id ? item.item_id.toString() : index.toString()}
                     contentContainerStyle={styles.listContainer} 
-                    showsVerticalScrollIndicator={false}
+                    showsVerticalScrollIndicator={false} /* 🚀 Vertical scroll intact */
                     renderItem={({ item }) => {
                         const isExpanded = item.item_id === expandedItemId;
                         const LOW_STOCK_THRESHOLD = 10;
                         const currentStock = item.stock || 0;
-                        const stockColor = currentStock <= LOW_STOCK_THRESHOLD ? '#e53935' : '#7cb342';
+                        const stockColor = currentStock <= LOW_STOCK_THRESHOLD ? '#e53935' : '#00D26A';
+                    
                         return (
-                            <View style={{ marginBottom: 12 }}>
-                                {/* 🚀 The Card is now clickable! */}
+                            <View style={{ marginBottom: 15 }}>
+                                {/* 🚀 Upgraded Attractive Card */}
                                 <TouchableOpacity 
                                     style={[styles.card, isExpanded && styles.cardExpanded]} 
-                                    activeOpacity={0.8}
+                                    activeOpacity={0.9}
                                     onPress={() => toggleExpand(item.item_id)}
+                                    className="hover-card"
                                 >
-                                    <View style={styles.cardDetails}>
-                                        <Text style={styles.cardText} numberOfLines={1}>
-                                            <Text style={styles.boldLabel}>Item Name: </Text>{item.item_name}
-                                        </Text>
-                                        <Text style={styles.cardText}>
-                                            <Text style={styles.boldLabel}>Purchase Rate: </Text>₹{item.purchase_rate}
-                                        </Text>
-                                            <Text style={styles.cardText}>
-                                                <Text style={styles.boldLabel}>Sale Rate: </Text>₹{item.sale_rate}
+                                    <View style={styles.cardContentWrapper}>
+                                        <View style={styles.cardLeft}>
+                                            <Text style={styles.itemName} numberOfLines={1}>
+                                                <Text style={{fontSize: 18}}>📦 </Text>{item.item_name}
                                             </Text>
-                                            <Text style={styles.cardText}>
-                                                <Text style={styles.boldLabel}>MRP: </Text>₹{item.mrp}
-                                            </Text>
-                                    </View>
-                                    <View style={styles.rightColumn}>
-                                        <View style={styles.imageContainer}>
-                                            {item.image_url ? (
-                                                <Image source={{ uri: getValidImageUrl(item.image_url) }} style={styles.itemImage} />
-                                            ) : (
-                                                <View style={styles.placeholderImage}><Text style={{fontSize: 24}}>🖼️</Text></View>
-                                            )}
+                                        
+                                            <View style={styles.priceGrid}>
+                                                <View style={styles.priceColumn}>
+                                                    <Text style={styles.priceLabel}>Purchase</Text>
+                                                    <Text style={styles.priceValue}>₹{item.purchase_rate}</Text>
+                                                </View>
+                                                <View style={styles.priceColumn}>
+                                                    <Text style={styles.priceLabel}>Sale</Text>
+                                                    <Text style={styles.priceValue}>₹{item.sale_rate}</Text>
+                                                </View>
+                                                <View style={styles.priceColumn}>
+                                                    <Text style={styles.priceLabel}>MRP</Text>
+                                                    <Text style={styles.priceValue}>₹{item.mrp}</Text>
+                                                </View>
+                                            </View>
                                         </View>
-                                        <Text style={[styles.stockText, { color: stockColor }]}>
-                                            STOCK: {currentStock}
-                                        </Text>
+
+                                        <View style={styles.cardRight}>
+                                            <View style={styles.imageContainer}>
+                                                {item.image_url ? (
+                                                    <Image source={{ uri: getValidImageUrl(item.image_url) }} style={styles.itemImage} />
+                                                ) : (
+                                                    <View style={styles.placeholderImage}><Text style={{fontSize: 24}}>🖼️</Text></View>
+                                                )}
+                                            </View>
+                                            <View style={[styles.stockBadge, { backgroundColor: stockColor + '1A' }]}>
+                                                <Text style={[styles.stockText, { color: stockColor }]}>
+                                                    {currentStock} in stock
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
                                 </TouchableOpacity>
+
+                                {/* Expanded Actions */}
                                 {isExpanded && (
                                     <View style={styles.actionRow}>
                                         {!showArchived ? (
                                             <>
                                                 <TouchableOpacity style={styles.updateBtn} onPress={() => handleUpdateClick(item)}>
-                                                    <Text style={styles.actionBtnText}>UPDATE</Text>
+                                                    <Text style={styles.actionBtnText}>✏️ UPDATE</Text>
                                                 </TouchableOpacity>
                                                 <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteClick(item)}>
-                                                    <Text style={styles.actionBtnText}>DELETE</Text>
+                                                    <Text style={styles.actionBtnText}>🗑️ DELETE</Text>
                                                 </TouchableOpacity>
                                             </>
                                         ):(
                                             <TouchableOpacity style={[styles.updateBtn, { backgroundColor: '#1976d2' }]} onPress={() => handleRestoreClick(item)}>
-                                                <Text style={styles.actionBtnText}>RESTORE ITEM</Text>
+                                                <Text style={styles.actionBtnText}>🔄 RESTORE ITEM</Text>
                                             </TouchableOpacity>
-                                        )}
+                                        )}  
                                     </View>
                                 )}
                             </View>
@@ -225,16 +269,17 @@ export default function InventoryScreen({ navigation }) {
                     ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
                 />
             )}
+        
             <UpdateItemModal 
                 visible={isUpdateModalVisible}
                 item={selectedItemForUpdate}
                 onClose={() => setUpdateModalVisible(false)}
-                onUpdateSuccess={fetchInventory} // Refresh the list when saving is done
+                onUpdateSuccess={fetchInventory} 
             />
             <AddItemModal 
                 visible={isAddModalVisible}
                 onClose={() => setAddModalVisible(false)}
-                onAddSuccess={fetchInventory} // This ensures the list instantly refreshes after adding!
+                onAddSuccess={fetchInventory} 
             />
         </View>
     );
