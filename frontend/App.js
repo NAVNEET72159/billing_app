@@ -108,6 +108,7 @@ export default function App() {
               <Stack.Screen name='RawMaterial' component={RawMaterialsScreen} />
               <Stack.Screen name='Production' component={ProductionReportScreen} />
               <Stack.Screen name='LogBook' component={LogBookScreen} />
+              <Stack.Screen name="Staff" component={StaffScreen} />
             </>
           ) : (
             <Stack.Screen name="Login">

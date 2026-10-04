@@ -11,6 +11,7 @@ export default function DashboardScreen({ navigation }) {
     
     // 🚀 Dynamic Greeting State
     const [greeting, setGreeting] = useState('');
+    const [userRole, setUserRole] = useState('SALESPERSON');
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -25,15 +26,16 @@ export default function DashboardScreen({ navigation }) {
 
     // 🚀 Note the new `highlight: true` on the New Bill item
     const menuItems = [
-        { id: 1, title: 'New Bill', image: require('../assets/images/bill_invoice.png'), route: 'NewBill', highlight: true },
-        { id: 2, title: 'Inventory', image: require('../assets/images/inventory.png'), route: 'Inventory' },
-        { id: 3, title: 'Customer', image: require('../assets/images/users.png'), route: 'Customers' },
-        { id: 4, title: 'Reports', image: require('../assets/images/report.png'), route: 'Reports' },
-        { id: 5, title: 'Barcode', image: require('../assets/images/barcode.png'), route: 'Barcode' },
-        { id: 6, title: 'Invoices', image: require('../assets/images/invoice-bill.png'), route: 'Invoice'},
-        { id: 7, title: 'Raw Material', image: require('../assets/images/raw.png'), route: 'RawMaterial' },
-        { id: 8, title: 'Production', image: require('../assets/images/factory.png'), route: 'Production' },
-        { id: 9, title: 'Log Book', image: require('../assets/images/log-book.png'), route: 'LogBook' }
+        { id: 1, title: 'New Bill', image: require('../assets/images/bill_invoice.png'), route: 'NewBill', highlight: true, allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
+        { id: 2, title: 'Inventory', image: require('../assets/images/inventory.png'), route: 'Inventory', allowedRoles: ['ADMIN', 'MANAGER'] },
+        { id: 3, title: 'Customer', image: require('../assets/images/users.png'), route: 'Customers', allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
+        { id: 4, title: 'Reports', image: require('../assets/images/report.png'), route: 'Reports', allowedRoles: ['ADMIN', 'MANAGER'] },
+        { id: 5, title: 'Barcode', image: require('../assets/images/barcode.png'), route: 'Barcode', allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
+        { id: 6, title: 'Invoices', image: require('../assets/images/invoice-bill.png'), route: 'Invoice', allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
+        { id: 7, title: 'Raw Material', image: require('../assets/images/raw.png'), route: 'RawMaterial', allowedRoles: ['ADMIN', 'MANAGER'] },
+        { id: 8, title: 'Production', image: require('../assets/images/factory.png'), route: 'Production', allowedRoles: ['ADMIN', 'MANAGER'] },
+        { id: 9, title: 'Log Book', image: require('../assets/images/log-book.png'), route: 'LogBook', allowedRoles: ['ADMIN', 'MANAGER'] },
+        { id: 10, title: 'Staff', image: require('../assets/images/users.png'), route: 'Staff', allowedRoles: ['ADMIN', 'MANAGER'] }
     ];
 
     const handleNavigation = (route) => {
@@ -58,7 +60,7 @@ export default function DashboardScreen({ navigation }) {
 
                 {/* 🚀 Upgraded Floating Grid Section */}
                 <View style={[styles.gridContainer, isDesktop && styles.gridContainerDesktop]}>
-                    {menuItems.map((item) => (
+                    {menuItems.filter((item) => item.allowedRoles.includes(userRole)).map((item) => (
                         <TouchableOpacity 
                             key={item.id} 
                             activeOpacity={0.7}
