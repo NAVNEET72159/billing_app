@@ -16,6 +16,7 @@ import ReportScreen from './screens/ReportsScreen';
 import RawMaterialsScreen from './screens/RawMaterialScreen';
 import ProductionReportScreen from './screens/ProductionReportScreen';
 import LogBookScreen from './screens/LogBookScreen';
+import StaffScreen from './screens/StaffScreen';
 
 
 const Stack = createNativeStackNavigator();
