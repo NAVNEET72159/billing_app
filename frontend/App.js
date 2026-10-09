@@ -16,8 +16,7 @@ import ReportScreen from './screens/ReportsScreen';
 import RawMaterialsScreen from './screens/RawMaterialScreen';
 import ProductionReportScreen from './screens/ProductionReportScreen';
 import LogBookScreen from './screens/LogBookScreen';
-import StaffScreen from './screens/StaffScreen';
-
+import StaffScreen from './screens/StaffScreen'; // 🚀 THE MISSING IMPORT IS HERE!
 
 const Stack = createNativeStackNavigator();
 
@@ -26,8 +25,10 @@ export default function App() {
   const [userToken, setUserToken] = useState(null);
   const inactivityTimer = useRef(null);
   const INACTIVITY_LIMIT = 30 * 60 * 1000;
+
   const handleLogout = async (message) => {
     await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userRole'); // 🚀 Clears role on logout so permissions reset properly
     setUserToken(null);
     if (Platform.OS === 'web') {
       window.alert(message);
@@ -35,6 +36,7 @@ export default function App() {
       alert(message);
     }
   };
+
   const resetInactivityTimeout = () => {
     if (inactivityTimer.current) {
       clearTimeout(inactivityTimer.current);
@@ -43,15 +45,16 @@ export default function App() {
       handleLogout("Session expired due to inactivity. Please log in again.");
     }, INACTIVITY_LIMIT);
   };
+
   const panResponder = useRef(
     PanResponder.create({
-      // This captures ANY touch on the entire screen
       onStartShouldSetPanResponderCapture: () => {
         resetInactivityTimeout();
-        return false; // Return false so we don't block the actual button clicks!
+        return false; 
       },
     })
   ).current;
+
   useEffect(() => {
     const checkExistingLogin = async () => {
       try {
@@ -63,28 +66,31 @@ export default function App() {
       } catch (e) {
       console.error("Failed to restore token");
       }
-      setIsLoading(false); // Stop the loading spinner
+      setIsLoading(false); 
     };
     checkExistingLogin();
+
     const interceptor = axios.interceptors.response.use(
-      (response) => response, // If request is successful, just pass it through
+      (response) => response, 
       async (error) => {
-        // If the backend says the JWT token expired (401 Unauthorized)
         if (error.response && error.response.status === 401) {
           await handleLogout("Your security token expired. Please log in again.");
         }
         return Promise.reject(error);
       }
     );
+
     const logoutListener = DeviceEventEmitter.addListener('triggerGlobalLogout', (msg) => {
       handleLogout(msg || "Successfully logged out.");
     });
+
     return () => {
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
       axios.interceptors.response.eject(interceptor);
       logoutListener.remove();
     };
   },  []);
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
