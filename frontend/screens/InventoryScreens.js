@@ -273,12 +273,12 @@ export default function InventoryScreen({ navigation }) {
             <UpdateItemModal 
                 visible={isUpdateModalVisible}
                 item={selectedItemForUpdate}
-                onClose={() => setUpdateModalVisible(false)}
+                onClose={() => setTimeout(() => setUpdateModalVisible(false), 50)} 
                 onUpdateSuccess={fetchInventory} 
             />
             <AddItemModal 
                 visible={isAddModalVisible}
-                onClose={() => setAddModalVisible(false)}
+                onClose={() => setTimeout(() => setAddModalVisible(false), 50)} 
                 onAddSuccess={fetchInventory} 
             />
         </View>
