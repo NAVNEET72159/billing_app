@@ -298,7 +298,7 @@ export default function UpdateItemModal({ visible, item, onClose, onUpdateSucces
 
                     {/* Form Controls */}
                     <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onClose} disabled={loading}>
+                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={() => setTimeout(onClose, 50)} disabled={loading}>
                             <Text style={styles.cancelBtnText}>Cancel</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.btn, styles.submitBtn]} onPress={handleSave} disabled={loading}>

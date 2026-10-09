@@ -29,7 +29,7 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
             Alert.alert("Success", "Customer added successfully!");
             setFormData({ customer_name: '', code: '', phone_number: '', alternate_number: '', email: '', current_address: '', permanent_address: '', city: '', state: '', pincode: '' });
             onAddSuccess(); 
-            onClose(); 
+            setTimeout(() => onClose(), 50); 
         } catch (error) {
             console.error("Add Customer Error:", error);
             Alert.alert("Error", "Failed to add customer to database.");
@@ -44,13 +44,13 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
         <Modal visible={visible} animationType="slide" transparent={true}>
             <View style={styles.overlay}>
                 {/* Invisible background button to close modal when clicking outside */}
-                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTimeout(onClose, 50)} />
 
                 <View style={styles.sidebar}>
                     {/* Header */}
                     <View style={styles.header}>
                         <Text style={styles.title}>Add New Customer</Text>
-                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                        <TouchableOpacity style={styles.closeBtn} onPress={() => setTimeout(onClose, 50)}>
                             <Text style={styles.closeIcon}>×</Text>
                         </TouchableOpacity>
                     </View>
@@ -101,7 +101,7 @@ export default function AddCustomerModal({ visible, onClose, onAddSuccess }) {
 
                         {/* Bottom Action Buttons */}
                         <View style={styles.buttonRow}>
-                            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onClose} disabled={loading}>
+                            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={() => setTimeout(onClose, 50)} disabled={loading}>
                                 <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.btn, styles.submitBtn]} onPress={handleSave} disabled={loading}>

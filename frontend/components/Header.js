@@ -3,11 +3,11 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import styles from '../styles/Header.styles';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
+const noBackButtonScreens = ['Login', 'Dashboard'];
 
 export default function Header({ rightIcon, onIconPress }) {
     const navigation = useNavigation();
     const route = useRoute();
-    const noBackButtonScreens = ['Login', 'Dashboard'];
     const shouldShowBack = navigation.canGoBack() && !noBackButtonScreens.includes(route.name);
     return (
         <View style={styles.header}>

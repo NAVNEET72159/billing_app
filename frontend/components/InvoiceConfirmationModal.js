@@ -36,7 +36,7 @@ export default function InvoiceConfirmationModal({ visible, cart, customer, gran
                     </ScrollView>
 
                     <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onCancel}>
+                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={() => setTimeout(onCancel, 50)}>
                             <Text style={styles.cancelBtnText}>Cancel</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.btn, styles.confirmBtn]} onPress={onConfirm}>

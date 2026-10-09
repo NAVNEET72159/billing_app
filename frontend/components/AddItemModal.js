@@ -270,19 +270,26 @@ export default function AddItemModal({ visible, onClose, onAddSuccess, initialBa
                             setFormData({...formData, unit: selectedItem});
                         }}
                         onCreateNew={() => {
-                            if (typeof window !== 'undefined' && window.prompt) {
+                            if (Platform.OS === 'web' && typeof window !== 'undefined' && window.prompt) {
                                 const customUnit = window.prompt("Enter a new custom unit (e.g., Box, Dozen):");
-                                if (customUnit) {
-                                    setFormData({...formData, unit: customUnit});
-                                }
+                                if (customUnit) setFormData({...formData, unit: customUnit});
+                            } else if (Platform.OS === 'ios') {
+                                Alert.prompt(
+                                    "New Unit",
+                                    "Enter a new custom unit (e.g., Box, Dozen):",
+                                    [
+                                        { text: "Cancel", style: "cancel" },
+                                        { text: "OK", onPress: (customUnit) => setFormData({...formData, unit: customUnit}) }
+                                    ]
+                                );
                             } else {
-                                Alert.alert("New Unit", "Custom units can be added here.");
+                                Alert.alert("New Unit", "Custom units can currently only be added via the Web Dashboard.");
                             }
                         }}
                     />
 
                     <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onClose} disabled={loading}>
+                        <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={() => setTimeout(onClose, 50)} disabled={loading}>
                             <Text style={styles.cancelBtnText}>Cancel</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.btn, styles.submitBtn]} onPress={handleSave} disabled={loading}>

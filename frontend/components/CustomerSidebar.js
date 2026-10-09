@@ -15,13 +15,13 @@ export default function CustomerSidebar({ visible, customers, onSelectCustomer, 
         <Modal visible={visible} animationType="slide" transparent={true}>
             <View style={styles.overlay}>
                 {/* Invisible background button to close modal when clicking outside */}
-                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTimeout(onClose, 50)} />
                 
                 <View style={styles.sidebar}>
                     {/* Header */}
                     <View style={styles.header}>
                         <Text style={styles.title}>Select Customer</Text>
-                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                        <TouchableOpacity style={styles.closeBtn} onPress={() => setTimeout(onClose, 50)}>
                             <Text style={styles.closeIcon}>×</Text>
                         </TouchableOpacity>
                     </View>

@@ -46,12 +46,12 @@ export default function AddStaffModal({ visible, onClose, onAddSuccess, currentU
     return (
         <Modal visible={visible} animationType="slide" transparent={true}>
             <View style={styles.overlay}>
-                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTimeout(onClose, 50)} />
                 
                 <View style={styles.sidebar}>
                     <View style={styles.header}>
                         <Text style={styles.title}>Add New {targetRole}</Text>
-                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                        <TouchableOpacity style={styles.closeBtn} onPress={() => setTimeout(onClose, 50)}>
                             <Text style={styles.closeIcon}>×</Text>
                         </TouchableOpacity>
                     </View>

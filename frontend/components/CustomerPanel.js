@@ -7,15 +7,11 @@ import AddCustomerModal from './AddCustomerModal';
 export default function CustomerPanel({ customers, onSelectCustomer, onClose, refreshCustomers }) {
     const [searchText, setSearchText] = useState('');
     const [isAddModalVisible, setAddModalVisible] = useState(false);
-    const filteredCustomers = (customers || []).filter(c => 
-        {
-            console.log('Fetching Customer: ')
-            const safeName = c.customer_name ? String(c.customer_name).toLowerCase() : '';
-            const safePhone = c.phone_number ? String(c.phone_number) : '';
-            
-            return safeName.includes(searchText.toLowerCase()) || safePhone.includes(searchText);
-        }
-    );
+    const filteredCustomers = (customers || []).filter(c => {
+        const safeName = c.customer_name ? String(c.customer_name).toLowerCase() : '';
+        const safePhone = c.phone_number ? String(c.phone_number) : '';
+        return safeName.includes(searchText.toLowerCase()) || safePhone.includes(searchText);
+    });
     return (
         <View style={styles.panelContainer}>
             <View style={styles.header}>

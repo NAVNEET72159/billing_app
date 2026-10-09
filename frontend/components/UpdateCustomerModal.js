@@ -57,13 +57,13 @@ export default function UpdateCustomerModal({ visible, customer, onClose, onUpda
         <Modal visible={visible} animationType="slide" transparent={true}>
             <View style={styles.overlay}>
                 {/* Invisible background button to close modal when clicking outside */}
-                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTimeout(onClose, 50)} />
                     
                 <View style={styles.sidebar}>
                     {/* Header */}
                     <View style={styles.header}>
                         <Text style={styles.title}>Update Customer</Text>
-                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                        <TouchableOpacity style={styles.closeBtn} onPress={() => setTimeout(onClose, 50)}>
                             <Text style={styles.closeIcon}>×</Text>
                         </TouchableOpacity>
                     </View>
@@ -106,7 +106,7 @@ export default function UpdateCustomerModal({ visible, customer, onClose, onUpda
                         <TextInput style={styles.input} keyboardType="numeric" value={formData.pincode} onChangeText={(text) => setFormData({...formData, pincode: text})} />
 
                         <View style={styles.buttonRow}>
-                            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onClose} disabled={loading}>
+                            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={() => setTimeout(onClose, 50)} disabled={loading}>
                                 <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.btn, styles.submitBtn]} onPress={handleSave} disabled={loading}>
