@@ -166,7 +166,7 @@ export default function BarcodeGeneratorScreen({ navigation }) {
             </ScrollView>
             <AddItemModal 
                 visible={isAddModalVisible}
-                onClose={() => setAddModalVisible(false)}
+                onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
                 initialBarcode={barcode}
                 onAddSuccess={() => {
                     setBarcode('');

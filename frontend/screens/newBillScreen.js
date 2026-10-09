@@ -209,7 +209,13 @@ export default function NewBillScreen({ navigation }) {
     const filteredInventoryBarcode = inventory.filter(item => 
         item.barcode && item.barcode.toLowerCase().includes(itemSearchText.toLowerCase())
     );
-    const filteredInventory = [...new Set([...filteredInventoryText, ...filteredInventoryBarcode])];
+    const filteredInventory = inventory.filter(item => {
+        const search = itemSearchText.toLowerCase();
+        return (
+            (item.item_name || '').toLowerCase().includes(search) ||
+            (item.barcode || '').toLowerCase().includes(search)
+        );
+    });
     
     return (
         <View style={styles.container}>
@@ -350,7 +356,7 @@ export default function NewBillScreen({ navigation }) {
                     visible={isCustomerModalVisible} 
                     customers={customers} 
                     onSelectCustomer={handleCustomerSelect} 
-                    onClose={() => setCustomerModalVisible(false)} 
+                    onClose={() => setTimeout(() => setCustomerModalVisible(false), 50)} 
                 />
             </Modal>
             

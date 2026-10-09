@@ -355,7 +355,7 @@ export default function RawMaterialsScreen({ navigation }) {
             <Modal visible={isUpdateModalVisible} animationType="slide" transparent={false}>
                 <View style={styles.container}>
                     <View style={styles.headerRow}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => setUpdateModalVisible(false)}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => setTimeout(() => setUpdateModalVisible(false), 50)}>
                             <Text style={styles.backArrow}>‹</Text>
                         </TouchableOpacity>
                     </View>
@@ -417,7 +417,7 @@ export default function RawMaterialsScreen({ navigation }) {
             {/* 🚀 NEW: CREATE GROUP MODAL */}
             <CreateGroupModal 
                 visible={isGroupModalVisible}
-                onClose={() => setGroupModalVisible(false)}
+                onClose={() => setTimeout(() => setGroupModalVisible(false), 50)}
                 onSuccess={(newGroupObj) => {
                     // Instantly updates dropdown list AND form selection
                     setItemGroups(prev => [...prev, newGroupObj]);
