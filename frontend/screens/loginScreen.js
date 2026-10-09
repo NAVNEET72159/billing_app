@@ -62,6 +62,7 @@ export default function LogInScreen({ navigation, setToken }) {
       const response = await loginUser(username, password);
       if (response && response.token) {
         await AsyncStorage.setItem('userToken', response.token);
+        await AsyncStorage.setItem('userRole', response.role);
         if (setToken) {
            setToken(response.token);
         }
