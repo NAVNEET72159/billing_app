@@ -132,21 +132,33 @@ export const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     heroBanner: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginBottom: 10,
+        backgroundColor: '#00D26A', // 🚀 The New Bill Green Background!
+        padding: 20,
+        paddingTop: Platform.OS === 'web' ? 40 : 60,
+        paddingBottom: 30,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        marginBottom: 20,
+        shadowColor: '#00D26A',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
+        elevation: 10,
     },
     heroHeader: {
         marginBottom: 15,
     },
+    pageTitle: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#ffffff', // White text to pop on green
+        letterSpacing: 0.5,
+    },
     pageSubtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 4,
+        fontSize: 15,
+        color: '#e8f5e9', // Light green-white subtitle
+        fontWeight: '500',
+        marginTop: 5,
     },
     searchWrapper: {
         width: '100%',
@@ -157,8 +169,15 @@ export const styles = StyleSheet.create({
         width: '100%',
     },
     searchContainer: {
-        flex: 1,
-        marginRight: 15,
+        backgroundColor: '#ffffff', // Crisp white search bar on green
+        borderRadius: 12,
+        height: 50,
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
     newButton: {
         paddingVertical: 12,
@@ -250,5 +269,58 @@ export const styles = StyleSheet.create({
     stockText: {
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    floatingCartWrapper: {
+        position: 'absolute',
+        bottom: Platform.OS === 'web' ? 40 : 30,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    floatingCartBtn: {
+        flexDirection: 'row',
+        backgroundColor: '#1a1a1a', // Premium dark button
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 30,
+        width: Platform.OS === 'web' ? 400 : '90%',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    floatingCartLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cartBadge: {
+        backgroundColor: '#00D26A',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    cartBadgeText: {
+        color: '#ffffff',
+        fontWeight: '900',
+        fontSize: 18,
+    },
+    floatingCartTitle: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    floatingCartTotal: {
+        color: '#00D26A',
+        fontSize: 16,
+        fontWeight: '800',
+        letterSpacing: 0.5,
     }
 });
