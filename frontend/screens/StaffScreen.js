@@ -50,6 +50,15 @@ export default function StaffScreen({ navigation }) {
         (user.username || '').toLowerCase().includes(searchText.toLowerCase())
     );
 
+    // 🚀 NEW: Smart Avatar Generator for Usernames (handles underscores smoothly)
+    const getInitials = (name) => {
+        if (!name) return '👤';
+        const cleanName = name.replace(/_/g, ' '); 
+        const parts = cleanName.trim().split(' ').filter(Boolean);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar hidden={true} />
@@ -101,35 +110,73 @@ export default function StaffScreen({ navigation }) {
                         return (
                             <View style={{ marginBottom: 15 }}>
                                 <TouchableOpacity 
-                                    style={[styles.card, isExpanded && styles.cardExpanded]} 
+                                    style={[styles.card, { padding: 20 }, isExpanded && styles.cardExpanded]} 
                                     activeOpacity={0.9}
                                     onPress={() => toggleExpand(item.user_id)}
                                     className="hover-card"
                                 >
-                                    <View style={styles.cardHeader}>
-                                        <Text style={styles.customerName} numberOfLines={1}>
-                                            <Text style={{fontSize: 16}}>🛡️ </Text>{item.username}
-                                        </Text>
-                                        {Platform.OS === 'web' ? (
-                                            <span className={`role-badge ${badgeClass}`}>{item.role}</span>
-                                        ) : (
-                                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: item.role === 'MANAGER' ? '#2196F3' : '#FF9800' }}>
-                                                {item.role}
+                                    {/* --- MAIN CARD ROW --- */}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isExpanded ? 18 : 0 }}>
+                                        {/* Avatar Bubble (Colors based on Role) */}
+                                        <View style={{ 
+                                            width: 54, height: 54, borderRadius: 27, 
+                                            backgroundColor: item.role === 'MANAGER' ? '#e3f2fd' : '#fff3e0', 
+                                            justifyContent: 'center', alignItems: 'center', 
+                                            marginRight: 15, borderWidth: 1, 
+                                            borderColor: item.role === 'MANAGER' ? '#bbdefb' : '#ffe0b2' 
+                                        }}>
+                                            <Text style={{ 
+                                                color: item.role === 'MANAGER' ? '#1976d2' : '#f57c00', 
+                                                fontSize: 18, fontWeight: '900', letterSpacing: 1 
+                                            }}>
+                                                {getInitials(item.username)}
                                             </Text>
-                                        )}
+                                        </View>
+                                        
+                                        {/* Name & Role */}
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }} numberOfLines={1}>
+                                                {item.username}
+                                            </Text>
+                                            {Platform.OS === 'web' ? (
+                                                <View style={{alignSelf: 'flex-start'}}>
+                                                    <span className={`role-badge ${badgeClass}`}>{item.role}</span>
+                                                </View>
+                                            ) : (
+                                                <Text style={{ fontSize: 12, fontWeight: 'bold', color: item.role === 'MANAGER' ? '#2196F3' : '#FF9800' }}>
+                                                    {item.role}
+                                                </Text>
+                                            )}
+                                        </View>
+
+                                        {/* Expand Chevron */}
+                                        <View>
+                                            <Text style={{ color: '#ccc', fontSize: 16, fontWeight: 'bold' }}>
+                                                {isExpanded ? '▲' : '▼'}
+                                            </Text>
+                                        </View>
                                     </View>
                                     
-                                    <View style={styles.cardDetails}>
-                                        <Text style={styles.detailText}>
-                                            <Text style={styles.iconText}>🟢 </Text>Status: {item.account_status}
-                                        </Text>
-                                    </View>
+                                    {/* --- EXPANDED DETAILS --- */}
+                                    {isExpanded && (
+                                        <View style={{ paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>
+                                                    {item.account_status === 'ACTIVE' ? '🟢' : '🔴'}
+                                                </Text>
+                                                <Text style={{ fontSize: 15, color: '#444', flex: 1, fontWeight: '500' }}>
+                                                    Status: {item.account_status}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
 
+                                {/* --- EXPANDED ACTION BUTTONS --- */}
                                 {isExpanded && (
                                     <View style={styles.actionRow}>
                                         <TouchableOpacity style={styles.updateBtn} onPress={() => {/* handleUpdateClick(item) */}}>
-                                            <Text style={styles.actionBtnText}>✏️ UPDATE</Text>
+                                            <Text style={styles.actionBtnText}>✏️ UPDATE ROLE</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={styles.deleteBtn} onPress={() => {/* handleDeleteClick(item) */}}>
                                             <Text style={styles.actionBtnText}>🗑️ SUSPEND</Text>
@@ -156,9 +203,11 @@ export default function StaffScreen({ navigation }) {
                     <Text style={styles.floatingCartTotal}>Add ➔</Text>
                 </TouchableOpacity>
             </View>
+            
+            {/* 🚀 SET TIMEOUT CRASH FIX APPLIED */}
             <AddStaffModal 
                 visible={isAddModalVisible}
-                onClose={() => setAddModalVisible(false)}
+                onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
                 onAddSuccess={fetchStaff}
                 currentUserRole={currentUserRole}
             />
