@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Alert, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar'; // 🚀 Added StatusBar for unified look
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/InventoryScreen.styles';
@@ -22,31 +23,24 @@ export default function InventoryScreen({ navigation }) {
 
     useEffect(() => {
         fetchInventory();
-    }, []);
+    }, [showArchived]);
 
     const fetchInventory = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
             const response = await axios.get(`${API_URL}/items?archived=${showArchived}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                timeout: 5000
+                headers: { Authorization: `Bearer ${token}` }
             });
             setInventory(response.data);
         } catch (error) {
             console.error("Error fetching inventory:", error);
-            if (Platform.OS !== 'web') {
-                Alert.alert("Error", "Failed to load inventory.");
-            } else {
-                window.alert("Failed to load inventory.");
-            }
+            const msg = "Failed to load inventory.";
+            Platform.OS !== 'web' ? Alert.alert("Error", msg) : window.alert(msg);
         } finally {
             setLoading(false);
         }
     };
-    useEffect(() => {
-        fetchInventory();
-    }, [showArchived]);
 
     const handleRestoreClick = async (item) => {
         try {
@@ -56,11 +50,8 @@ export default function InventoryScreen({ navigation }) {
             });
             setInventory(prev => prev.filter(i => String(i.item_id) !== String(item.item_id)));
             
-            if (Platform.OS !== 'web') {
-                Alert.alert("Restored", "Item is back in your active inventory!");
-            } else {
-                window.alert("Item is back in your active inventory!");
-            }
+            const msg = "Item is back in your active inventory!";
+            Platform.OS !== 'web' ? Alert.alert("Restored", msg) : window.alert(msg);
         } catch (error) {
             console.error("Restore Error:", error);
         }
@@ -72,58 +63,54 @@ export default function InventoryScreen({ navigation }) {
             await axios.delete(`${API_URL}/items/${item.item_id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Immediately remove it from the screen
             setInventory(prev => prev.filter(i => String(i.item_id) !== String(item.item_id)));
             
-            if (Platform.OS !== 'web') {
-                Alert.alert("Deleted", "Item removed successfully.");
-            } else {
-                window.alert("Item removed successfully.");
-            }
+            const msg = "Item removed successfully.";
+            Platform.OS !== 'web' ? Alert.alert("Deleted", msg) : window.alert(msg);
         } catch (error) {
             console.error("Delete Error:", error);
-            if (Platform.OS !== 'web') {
-                Alert.alert("Error", "Could not delete the item.");
-            } else {
-                window.alert("Could not delete the item.");
-            }
+            const msg = "Could not delete the item.";
+            Platform.OS !== 'web' ? Alert.alert("Error", msg) : window.alert(msg);
         }
     };
+
     const handleDeleteClick = async (item) => {
+        const warningMsg = `Are you sure you want to permanently delete "${item.item_name}"?`;
         if (Platform.OS === 'web') {
-            const confirmDelete = window.confirm(`Are you sure you want to permanently delete "${item.item_name}"?`);
-            if (confirmDelete) {
-                executeDelete(item);
-            }
-        }
-        else {
+            if (window.confirm(warningMsg)) executeDelete(item);
+        } else {
             Alert.alert(
-                "Delete Item",
-                `Are you sure you want to permanently delete "${item.item_name}"?`,
+                "Delete Item", warningMsg,
                 [
                     { text: "Cancel", style: "cancel" },
-                    { 
-                        text: "DELETE", 
-                        style: "destructive", 
-                        onPress: () => executeDelete(item)
-                    }
+                    { text: "DELETE", style: "destructive", onPress: () => executeDelete(item) }
                 ]
             );
         }
     };
+
     const handleUpdateClick = (item) => {
         setSelectedItemForUpdate(item);
         setUpdateModalVisible(true);
     };
+
     const toggleExpand = (itemId) => {
         setExpandedItemId(prevId => prevId === itemId ? null : itemId);
-    }
-    const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(item => 
-        (item.item_name || '').toLowerCase().includes(searchText.toLowerCase())
-    );
+    };
+
+    // 🚀 UPGRADED: Now searches by both Name AND Barcode like the New Bill Screen
+    const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(item => {
+        const search = searchText.toLowerCase();
+        return (
+            (item.item_name || '').toLowerCase().includes(search) ||
+            (item.barcode || '').toLowerCase().includes(search)
+        );
+    });
 
     return (
         <View style={styles.container}>
+            <StatusBar hidden={true} />
+            
             {/* 🚀 WEB-ONLY HOVER ANIMATIONS */}
             {Platform.OS === 'web' && (
                 <style type="text/css">{`
@@ -144,9 +131,7 @@ export default function InventoryScreen({ navigation }) {
                 `}</style>
             )}
 
-            <View style={styles.headerWrapper}>
-                <Header />
-            </View>
+            <Header />
         
             {/* 🚀 Dashboard-Style Hero Banner */}
             <View style={styles.heroBanner}>
@@ -154,30 +139,32 @@ export default function InventoryScreen({ navigation }) {
                     <Text style={styles.pageTitle}>Inventory</Text>
                     <Text style={styles.pageSubtitle}>Manage your products and stock</Text>
                 </View>
+                
+                {/* 🚀 Sleek Search Row matching New Bill */}
                 <View style={styles.searchWrapper}>
                     <View style={styles.searchRow}>
-                        <SearchBar 
-                            placeholder="Search items by name..." 
-                            value={searchText}
-                            onChangeText={setSearchText}
-                            containerStyle={styles.searchContainer} 
-                        />
+                        <View style={{ flex: 1, marginRight: 12 }}>
+                            <SearchBar 
+                                placeholder="Search by name or barcode..." 
+                                value={searchText}
+                                onChangeText={setSearchText}
+                                containerStyle={styles.searchContainer} 
+                            />
+                        </View>
                         <TouchableOpacity 
-                            style={[styles.newButton, { backgroundColor: showArchived ? '#e53935' : '#1a1a1a', marginRight: 10 }]}
+                            style={[{ 
+                                backgroundColor: showArchived ? '#e53935' : '#1a1a1a', 
+                                paddingHorizontal: 16, 
+                                borderRadius: 12, 
+                                justifyContent: 'center' 
+                            }]}
                             onPress={() => setShowArchived(!showArchived)}
                             className="hover-btn"
                         >
-                            <Text style={styles.newButtonText}>{showArchived ? 'Active' : 'Archived'}</Text>
+                            <Text style={{color: '#fff', fontWeight: '800', fontSize: 13, letterSpacing: 0.5}}>
+                                {showArchived ? 'VIEW ACTIVE' : 'VIEW ARCHIVED'}
+                            </Text>
                         </TouchableOpacity>
-                        {!showArchived && (
-                            <TouchableOpacity 
-                                style={[styles.newButton, { backgroundColor: '#00D26A' }]}
-                                onPress={() => setAddModalVisible(true)}
-                                className="hover-btn"
-                            >
-                                <Text style={styles.newButtonText}>+ New</Text>
-                            </TouchableOpacity>
-                        )}
                     </View>
                 </View>
             </View>
@@ -189,7 +176,7 @@ export default function InventoryScreen({ navigation }) {
                     data={filteredInventory}
                     keyExtractor={(item, index) => item.item_id ? item.item_id.toString() : index.toString()}
                     contentContainerStyle={styles.listContainer} 
-                    showsVerticalScrollIndicator={false} /* 🚀 Vertical scroll intact */
+                    showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         const isExpanded = item.item_id === expandedItemId;
                         const LOW_STOCK_THRESHOLD = 10;
@@ -198,7 +185,7 @@ export default function InventoryScreen({ navigation }) {
                     
                         return (
                             <View style={{ marginBottom: 15 }}>
-                                {/* 🚀 Upgraded Attractive Card */}
+                                {/* Upgraded Attractive Card */}
                                 <TouchableOpacity 
                                     style={[styles.card, isExpanded && styles.cardExpanded]} 
                                     activeOpacity={0.9}
@@ -268,6 +255,21 @@ export default function InventoryScreen({ navigation }) {
                     }}
                     ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
                 />
+            )}
+            
+            {/* 🚀 NEW: Sticky Floating Button exactly like New Bill Screen */}
+            {!showArchived && (
+                <View style={styles.floatingCartWrapper}>
+                    <TouchableOpacity style={styles.floatingCartBtn} onPress={() => setAddModalVisible(true)} activeOpacity={0.9}>
+                        <View style={styles.floatingCartLeft}>
+                            <View style={styles.cartBadge}>
+                                <Text style={styles.cartBadgeText}>+</Text>
+                            </View>
+                            <Text style={styles.floatingCartTitle}>New Item</Text>
+                        </View>
+                        <Text style={styles.floatingCartTotal}>Add ➔</Text>
+                    </TouchableOpacity>
+                </View>
             )}
         
             <UpdateItemModal 
