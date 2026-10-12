@@ -84,6 +84,14 @@ export default function CustomerScreen({ navigation }) {
         (c.phone_number || '').includes(searchText)
     );
 
+    // 🚀 NEW: Helper function to generate clean Avatar Initials
+    const getInitials = (name) => {
+        if (!name) return '👤';
+        const parts = name.trim().split(' ').filter(Boolean);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar hidden={true} />
@@ -129,7 +137,7 @@ export default function CustomerScreen({ navigation }) {
                 </View>
             </View>
 
-            {/* 🚀 LIST VIEW */}
+            {/* 🚀 UPGRADED LIST VIEW */}
             {loading ? (
                 <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
             ) : (
@@ -140,45 +148,74 @@ export default function CustomerScreen({ navigation }) {
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         const isExpanded = item.customer_id === expandedCustomerId;
+                        
+                        // Smart address formatting
+                        const fullAddress = [item.current_address, item.city, item.state, item.pincode]
+                            .filter(Boolean).join(', ');
 
                         return (
                             <View style={{ marginBottom: 15 }}>
                                 <TouchableOpacity 
-                                    style={[styles.card, isExpanded && styles.cardExpanded]} 
+                                    style={[styles.card, { padding: 20 }, isExpanded && styles.cardExpanded]} 
                                     activeOpacity={0.9}
                                     onPress={() => toggleExpand(item.customer_id)}
-                                    className="hover-card" // 🚀 Injects the CSS hover animation on Web!
+                                    className="hover-card"
                                 >
-                                    <View style={styles.cardHeader}>
-                                        <Text style={styles.customerName} numberOfLines={1}>
-                                            <Text style={{fontSize: 16}}>👤 </Text>{item.customer_name}
-                                        </Text>
+                                    {/* --- MAIN CARD ROW --- */}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isExpanded ? 18 : 0 }}>
+                                        {/* Avatar Bubble */}
+                                        <View style={{ 
+                                            width: 54, height: 54, borderRadius: 27, 
+                                            backgroundColor: '#e8f5e9', justifyContent: 'center', alignItems: 'center', 
+                                            marginRight: 15, borderWidth: 1, borderColor: '#c8e6c9' 
+                                        }}>
+                                            <Text style={{ color: '#00D26A', fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>
+                                                {getInitials(item.customer_name)}
+                                            </Text>
+                                        </View>
+                                        
+                                        {/* Name & Phone */}
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }} numberOfLines={1}>
+                                                {item.customer_name}
+                                            </Text>
+                                            <Text style={{ fontSize: 14, color: '#666', fontWeight: '600' }}>
+                                                📞 {item.phone_number}
+                                            </Text>
+                                        </View>
+
+                                        {/* Expand Chevron */}
+                                        <View>
+                                            <Text style={{ color: '#ccc', fontSize: 16, fontWeight: 'bold' }}>
+                                                {isExpanded ? '▲' : '▼'}
+                                            </Text>
+                                        </View>
                                     </View>
                                     
-                                    <View style={styles.cardDetails}>
-                                        <Text style={styles.detailText}>
-                                            <Text style={styles.iconText}>📞 </Text>{item.phone_number}
-                                        </Text>
-                                        
-                                        {(item.email || isExpanded) && (
-                                            <Text style={styles.detailText} numberOfLines={1}>
-                                                <Text style={styles.iconText}>✉️ </Text>{item.email || 'No email provided'}
-                                            </Text>
-                                        )}
-                                        
-                                        {(item.current_address || isExpanded) && (
-                                            <Text style={styles.detailText} numberOfLines={isExpanded ? 3 : 1}>
-                                                <Text style={styles.iconText}>📍 </Text>{item.current_address || 'No address provided'}
-                                            </Text>
-                                        )}
-                                    </View>
+                                    {/* --- EXPANDED DETAILS --- */}
+                                    {isExpanded && (
+                                        <View style={{ paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+                                            <View style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }}>
+                                                <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>✉️</Text>
+                                                <Text style={{ fontSize: 15, color: '#444', flex: 1, fontWeight: '500' }}>
+                                                    {item.email || 'No email provided'}
+                                                </Text>
+                                            </View>
+                                            <View style={{ flexDirection: 'row' }}>
+                                                <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>📍</Text>
+                                                <Text style={{ fontSize: 14, color: '#555', flex: 1, lineHeight: 22 }}>
+                                                    {fullAddress || 'No address provided'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
 
-                                {/* 🚀 EXPANDED ACTION BUTTONS */}
+                                {/* --- EXPANDED ACTION BUTTONS --- */}
                                 {isExpanded && (
                                     <View style={styles.actionRow}>
                                         <TouchableOpacity style={styles.updateBtn} onPress={() => handleUpdateClick(item)}>
-                                            <Text style={styles.actionBtnText}>✏️ UPDATE</Text>
+                                            <Text style={styles.actionBtnText}>✏️ UPDATE PROFILE</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteClick(item)}>
                                             <Text style={styles.actionBtnText}>🗑️ DELETE</Text>
@@ -192,28 +229,29 @@ export default function CustomerScreen({ navigation }) {
                 />
             )}
 
+            {/* FLOATING ACTION BUTTON */}
             <View style={styles.floatingCartWrapper}>
                 <TouchableOpacity style={styles.floatingCartBtn} onPress={() => setAddModalVisible(true)} activeOpacity={0.9}>
                     <View style={styles.floatingCartLeft}>
-                    <View style={styles.cartBadge}>
-                        <Text style={styles.cartBadgeText}>+</Text>
+                        <View style={styles.cartBadge}>
+                            <Text style={styles.cartBadgeText}>+</Text>
+                        </View>
+                        <Text style={styles.floatingCartTitle}>New Customer</Text>
                     </View>
-                    <Text style={styles.floatingCartTitle}>New Customer</Text>
-                </View>
-                <Text style={styles.floatingCartTotal}>Add ➔</Text>
+                    <Text style={styles.floatingCartTotal}>Add ➔</Text>
                 </TouchableOpacity>
             </View>
 
             <AddCustomerModal 
                 visible={isAddModalVisible}
-                onClose={() => setAddModalVisible(false)}
+                onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
                 onAddSuccess={fetchCustomers}
             />
 
             <UpdateCustomerModal 
                 visible={isUpdateModalVisible}
                 customer={selectedCustomer}
-                onClose={() => setUpdateModalVisible(false)}
+                onClose={() => setTimeout(() => setUpdateModalVisible(false), 50)}
                 onUpdateSuccess={fetchCustomers}
             />
         </View>
