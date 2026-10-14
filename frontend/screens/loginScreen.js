@@ -1,36 +1,52 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/LoginScreen.styles';
 import { loginUser } from '../services/authServices';
 
 export default function LogInScreen({ navigation, setToken }) {
+  // 🚀 NEW: Detect screen size for responsiveness
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // 🚀 Set up the Bounce Animation Value
   const bounceAnim = useRef(new Animated.Value(0)).current;
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    // 🚀 Create a continuous bouncing loop
+    isMounted.current = true;
+    
     const bounce = () => {
+      if (!isMounted.current) return;
+      
       Animated.sequence([
         Animated.timing(bounceAnim, {
-          toValue: -25, // Jump up
+          toValue: -25, 
           duration: 400,
           useNativeDriver: true,
         }),
         Animated.spring(bounceAnim, {
-          toValue: 0, // Fall back down with a spring effect
+          toValue: 0, 
           friction: 3,
           tension: 40,
           useNativeDriver: true,
         })
-      ]).start(() => setTimeout(bounce, 1500)); // Wait 1.5 seconds, then bounce again
+      ]).start(({ finished }) => {
+          if (finished && isMounted.current) {
+              setTimeout(bounce, 1500); 
+          }
+      }); 
     };
+    
     bounce();
+
+    return () => {
+        isMounted.current = false;
+    };
   }, [bounceAnim]);
 
   const renderCurvedText = (text, textStyle, angleStep, yStep) => {
@@ -38,9 +54,9 @@ export default function LogInScreen({ navigation, setToken }) {
       <View style={styles.curvedRow}>
         {text.split('').map((char, i) => {
           const mid = text.length / 2;
-          const distance = (i + 0.5) - mid; // Distance from the center character
-          const rotate = `${distance * angleStep}deg`; // Rotate outer letters more
-          const translateY = (distance * distance) * yStep; // Parabolic drop for outer letters
+          const distance = (i + 0.5) - mid; 
+          const rotate = `${distance * angleStep}deg`; 
+          const translateY = (distance * distance) * yStep; 
 
           return (
             <Text key={i} style={[textStyle, { transform: [{ rotate }, { translateY }] }]}>
@@ -71,27 +87,39 @@ export default function LogInScreen({ navigation, setToken }) {
       const errorMessage = error.response ? error.response.data.error : 'Network error. Is the server running?';
       Alert.alert('Login Failed', errorMessage);
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      // 🚀 FIXED: Dynamically switches to column on phones, row on PC
+      style={[styles.container, { flexDirection: isDesktop ? 'row' : 'column', flex: 1, backgroundColor: '#00D26A' }]}
     >
       <StatusBar hidden={true} />
       
-      {/* 🚀 LEFT SIDE: Branding & Bouncing Text */}
-      <View style={styles.leftSection}>
+      {/* 🚀 LEFT SIDE: Branding */}
+      <View style={[
+          styles.leftSection, 
+          { 
+              flex: isDesktop ? 1 : 0.4, // Takes up 40% of height on mobile
+              width: isDesktop ? '50%' : '100%', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              backgroundColor: 'transparent'
+          }
+      ]}>
         <View style={styles.brandingContainer}>
             <Image 
                 source={require('../assets/images/pos.png')} 
-                style={styles.posImage} 
+                // 🚀 Scales image slightly down on mobile so it fits better
+                style={[styles.posImage, { width: isDesktop ? 150 : 100, height: isDesktop ? 150 : 100 }]} 
                 resizeMode="contain"
             />
             
-            {/* Apply the bounce animation specifically to the text block */}
             <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
                 {renderCurvedText("PYSSUM", styles.pyssumText, 5, 1.2)}
                 <View style={styles.posOffset}>
@@ -102,8 +130,20 @@ export default function LogInScreen({ navigation, setToken }) {
       </View>
 
       {/* 🚀 RIGHT SIDE: The Form */}
-      <View style={styles.formSection}>
-        <View style={styles.formCard}>
+      <View style={[
+          styles.formSection, 
+          { 
+              flex: isDesktop ? 1 : 0.6, // Takes up bottom 60% on mobile
+              width: isDesktop ? '50%' : '100%', 
+              justifyContent: isDesktop ? 'center' : 'flex-start', // Pushes up slightly on mobile
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingTop: isDesktop ? 0 : 20,
+              backgroundColor: 'transparent'
+          }
+      ]}>
+        {/* 🚀 Forced max-width and center alignment so it never overflows off-screen */}
+        <View style={[styles.formCard, { width: '100%', maxWidth: 400, alignSelf: 'center' }]}>
           <Text style={styles.headerTitle}>Login Now</Text>
           <Text style={styles.headerSubtitle}>Enter your details to access the PYSSUM POS system.</Text>
 
