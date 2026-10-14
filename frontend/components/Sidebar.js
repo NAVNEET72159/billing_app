@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 🚀 Array loaded once into memory
 const menuItems = [
-    { id: 1, title: 'New Bill', image: require('../assets/images/bill_invoice.png'), route: 'NewBill', highlight: true, allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
+    { id: 1, title: 'New Bill', image: require('../assets/images/bill_invoice.png'), route: 'NewBill', allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
     { id: 2, title: 'Inventory', image: require('../assets/images/inventory.png'), route: 'Inventory', allowedRoles: ['ADMIN', 'MANAGER'] },
     { id: 3, title: 'Customer', image: require('../assets/images/users.png'), route: 'Customers', allowedRoles: ['ADMIN', 'MANAGER', 'SALESPERSON'] },
     { id: 4, title: 'Reports', image: require('../assets/images/report.png'), route: 'Reports', allowedRoles: ['ADMIN', 'MANAGER'] },
@@ -20,32 +19,58 @@ export default function Sidebar({ navigation, currentRoute }) {
     const { width } = useWindowDimensions();
     const isDesktop = width > 768;
     const [userRole, setUserRole] = useState(null);
+    
+    // 🚀 NEW: Theme state management
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
-        const fetchRole = async () => {
+        const fetchPreferences = async () => {
             const role = await AsyncStorage.getItem('userRole');
             setUserRole(role || 'SALESPERSON');
+            
+            // Load saved theme preference
+            const savedTheme = await AsyncStorage.getItem('appTheme');
+            if (savedTheme === 'dark') setIsDarkMode(true);
         };
-        fetchRole();
+        fetchPreferences();
     }, []);
 
-    // 🚀 If viewing on a mobile phone, hide the sidebar completely
     if (!isDesktop) return null;
 
     const visibleMenuItems = menuItems.filter(item => item.allowedRoles.includes(userRole));
 
+    // 🚀 NEW: Toggle function that saves to storage
+    const toggleTheme = async () => {
+        const newTheme = !isDarkMode;
+        setIsDarkMode(newTheme);
+        await AsyncStorage.setItem('appTheme', newTheme ? 'dark' : 'light');
+        
+        // Note: To make the whole app dark, you would emit an event here 
+        // to tell your other screens to update their colors too!
+    };
+
+    // 🚀 NEW: Dynamic Theme Colors
+    const theme = {
+        background: isDarkMode ? '#121212' : '#ffffff',
+        border: isDarkMode ? '#333333' : '#eeeeee',
+        textMain: isDarkMode ? '#ffffff' : '#1a1a1a',
+        textMuted: isDarkMode ? '#aaaaaa' : '#666666',
+        hoverBg: isDarkMode ? '#1e1e1e' : '#f0fdf4',
+        activeBg: isDarkMode ? 'rgba(0, 210, 106, 0.15)' : '#f0fdf4',
+    };
+
     return (
-        <View style={styles.sidebar}>
+        <View style={[styles.sidebar, { backgroundColor: theme.background, borderRightColor: theme.border }]}>
             {Platform.OS === 'web' && (
                 <style type="text/css">{`
                     .sidebar-btn { transition: all 0.2s ease; }
-                    .sidebar-btn:hover { background-color: #f0fdf4 !important; transform: translateX(5px); }
+                    .sidebar-btn:hover { background-color: ${theme.hoverBg} !important; transform: translateX(5px); }
                 `}</style>
             )}
 
             <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>PYSSUM <Text style={{color: '#00D26A'}}>POS</Text></Text>
-                <View style={styles.roleBadge}>
+                <Text style={[styles.logoText, { color: theme.textMain }]}>PYSSUM <Text style={{color: '#00D26A'}}>POS</Text></Text>
+                <View style={[styles.roleBadge, { backgroundColor: isDarkMode ? '#00D26A20' : '#e8f5e9' }]}>
                     <Text style={styles.roleBadgeText}>{userRole}</Text>
                 </View>
             </View>
@@ -57,15 +82,22 @@ export default function Sidebar({ navigation, currentRoute }) {
                         <TouchableOpacity
                             key={item.id}
                             className="sidebar-btn"
-                            style={[styles.menuItem, isActive && styles.activeMenuItem]}
+                            style={[
+                                styles.menuItem, 
+                                isActive && [styles.activeMenuItem, { backgroundColor: theme.activeBg }]
+                            ]}
                             onPress={() => navigation.navigate(item.route)}
                         >
                             <Image 
                                 source={item.image} 
-                                style={[styles.menuIcon, { tintColor: isActive ? '#00D26A' : '#666' }]} 
+                                style={[styles.menuIcon, { tintColor: isActive ? '#00D26A' : theme.textMuted }]} 
                                 resizeMode="contain"
                             />
-                            <Text style={[styles.menuText, isActive && styles.activeMenuText]}>
+                            <Text style={[
+                                styles.menuText, 
+                                { color: isActive ? '#00D26A' : theme.textMuted },
+                                isActive && styles.activeMenuText
+                            ]}>
                                 {item.title}
                             </Text>
                         </TouchableOpacity>
@@ -73,7 +105,14 @@ export default function Sidebar({ navigation, currentRoute }) {
                 })}
             </View>
             
-            <View style={styles.footer}>
+            <View style={[styles.footer, { borderTopColor: theme.border }]}>
+                {/* 🚀 NEW: The Theme Toggle Button */}
+                <TouchableOpacity style={[styles.themeToggleBtn, { borderColor: theme.border }]} onPress={toggleTheme}>
+                    <Text style={[styles.themeToggleText, { color: theme.textMain }]}>
+                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                    </Text>
+                </TouchableOpacity>
+                
                 <Text style={styles.footerText}>© Shandilya Enterprises</Text>
             </View>
         </View>
@@ -83,9 +122,7 @@ export default function Sidebar({ navigation, currentRoute }) {
 const styles = StyleSheet.create({
     sidebar: {
         width: 260,
-        backgroundColor: '#ffffff',
         borderRightWidth: 1,
-        borderRightColor: '#eeeeee',
         height: '100%',
         paddingVertical: 25,
         justifyContent: 'space-between',
@@ -94,7 +131,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.03,
         shadowRadius: 10,
         elevation: 5,
-        zIndex: 100, // Keeps shadow above the main content
+        zIndex: 100, 
     },
     logoContainer: {
         paddingHorizontal: 25,
@@ -103,11 +140,9 @@ const styles = StyleSheet.create({
     logoText: {
         fontSize: 26,
         fontWeight: '900',
-        color: '#1a1a1a',
         letterSpacing: 0.5,
     },
     roleBadge: {
-        backgroundColor: '#e8f5e9',
         alignSelf: 'flex-start',
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -133,7 +168,6 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     activeMenuItem: {
-        backgroundColor: '#f0fdf4',
         borderRightWidth: 3,
         borderRightColor: '#00D26A',
     },
@@ -145,21 +179,32 @@ const styles = StyleSheet.create({
     menuText: {
         fontSize: 15,
         fontWeight: '600',
-        color: '#666',
     },
     activeMenuText: {
-        color: '#00D26A',
         fontWeight: '800',
     },
     footer: {
         paddingHorizontal: 25,
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
         paddingTop: 20,
+    },
+    themeToggleBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderRadius: 8,
+        marginBottom: 15,
+    },
+    themeToggleText: {
+        fontSize: 13,
+        fontWeight: '700',
     },
     footerText: {
         fontSize: 12,
         color: '#aaa',
         fontWeight: '500',
+        textAlign: 'center'
     }
 });
