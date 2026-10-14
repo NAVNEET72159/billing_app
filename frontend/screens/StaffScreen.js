@@ -8,10 +8,9 @@ import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import { API_URL } from '../config/api';
 import AddStaffModal from '../components/AddStaffModal';
-import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
+import Sidebar from '../components/Sidebar';
 
 export default function StaffScreen({ navigation }) {
-    // 🚀 Detect if the user is on a desktop computer
     const { width } = useWindowDimensions();
     const isDesktop = width > 768;
 
@@ -49,6 +48,86 @@ export default function StaffScreen({ navigation }) {
         setExpandedStaffId(prevId => prevId === userId ? null : userId);
     };
 
+    // 🚀 NEW: Function to toggle suspension status
+    const handleSuspendToggle = async (user) => {
+        const isCurrentlySuspended = user.account_status === 'SUSPENDED';
+        const actionWord = isCurrentlySuspended ? 'reactivate' : 'suspend';
+        const newStatus = isCurrentlySuspended ? 'ACTIVE' : 'SUSPENDED';
+
+        const warningMsg = `Are you sure you want to ${actionWord} ${user.username}'s account?`;
+        
+        const executeToggle = async () => {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                await axios.put(`${API_URL}/staff/${user.user_id}/suspend`, 
+                    { newStatus: newStatus },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                
+                // Immediately update local state so UI feels instant
+                setStaff(prev => prev.map(s => 
+                    s.user_id === user.user_id ? { ...s, account_status: newStatus } : s
+                ));
+            } catch (error) {
+                console.error("Toggle Error:", error);
+                const msg = "Could not update account status.";
+                Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Error", msg);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(warningMsg)) executeToggle();
+        } else {
+            Alert.alert("Confirm Action", warningMsg, [
+                { text: "Cancel", style: "cancel" },
+                { text: "Confirm", style: isCurrentlySuspended ? "default" : "destructive", onPress: executeToggle }
+            ]);
+        }
+    };
+
+    // 🚀 NEW: Function to toggle user role
+    const handleRoleUpdate = async (user) => {
+        // Only Admins are allowed to change roles based on our backend security
+        if (currentUserRole !== 'ADMIN') {
+            const msg = "Only Superadmins can modify staff roles.";
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Permission Denied", msg);
+            return;
+        }
+
+        const isCurrentlyManager = user.role === 'MANAGER';
+        const newRole = isCurrentlyManager ? 'SALESPERSON' : 'MANAGER';
+        const actionWord = isCurrentlyManager ? 'demote' : 'promote';
+
+        const warningMsg = `Are you sure you want to ${actionWord} ${user.username} to a ${newRole}?`;
+
+        const executeUpdate = async () => {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                await axios.put(`${API_URL}/staff/${user.user_id}/role`, 
+                    { newRole: newRole },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                
+                setStaff(prev => prev.map(s => 
+                    s.user_id === user.user_id ? { ...s, role: newRole } : s
+                ));
+            } catch (error) {
+                console.error("Role Update Error:", error);
+                const msg = "Could not update role.";
+                Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Error", msg);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(warningMsg)) executeUpdate();
+        } else {
+            Alert.alert("Confirm Role Change", warningMsg, [
+                { text: "Cancel", style: "cancel" },
+                { text: "Confirm", onPress: executeUpdate }
+            ]);
+        }
+    };
+
     const filteredStaff = (Array.isArray(staff) ? staff : []).filter(user => 
         (user.username || '').toLowerCase().includes(searchText.toLowerCase())
     );
@@ -62,17 +141,12 @@ export default function StaffScreen({ navigation }) {
     };
 
     return (
-        // 🚀 THE MAGIC LAYOUT WRAPPER
         <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
             <StatusBar hidden={true} />
-            
-            {/* 🚀 THE SIDEBAR */}
             <Sidebar navigation={navigation} currentRoute="Staff" />
 
-            {/* 🚀 MAIN CONTENT AREA */}
             <View style={{ flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
                 
-                {/* WEB-ONLY HOVER ANIMATIONS */}
                 {Platform.OS === 'web' && (
                     <style type="text/css">{`
                         .hover-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
@@ -176,13 +250,25 @@ export default function StaffScreen({ navigation }) {
                                         )}
                                     </TouchableOpacity>
 
+                                    {/* 🚀 FIXED: Wired up the buttons! */}
                                     {isExpanded && (
                                         <View style={styles.actionRow}>
-                                            <TouchableOpacity style={styles.updateBtn} onPress={() => {/* handleUpdateClick(item) */}}>
-                                                <Text style={styles.actionBtnText}>✏️ UPDATE ROLE</Text>
+                                            <TouchableOpacity 
+                                                style={styles.updateBtn} 
+                                                onPress={() => handleRoleUpdate(item)}
+                                            >
+                                                <Text style={styles.actionBtnText}>
+                                                    {item.role === 'MANAGER' ? '📉 DEMOTE ROLE' : '📈 PROMOTE ROLE'}
+                                                </Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={styles.deleteBtn} onPress={() => {/* handleDeleteClick(item) */}}>
-                                                <Text style={styles.actionBtnText}>🗑️ SUSPEND</Text>
+
+                                            <TouchableOpacity 
+                                                style={styles.deleteBtn} 
+                                                onPress={() => handleSuspendToggle(item)}
+                                            >
+                                                <Text style={[styles.actionBtnText, { color: item.account_status === 'ACTIVE' ? '#e53935' : '#00D26A' }]}>
+                                                    {item.account_status === 'ACTIVE' ? '🚫 SUSPEND' : '✅ REACTIVATE'}
+                                                </Text>
                                             </TouchableOpacity>
                                         </View>
                                     )}
