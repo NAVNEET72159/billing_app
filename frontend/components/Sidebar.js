@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, useWindowDimensions, ScrollView, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const menuItems = [
@@ -19,8 +19,6 @@ export default function Sidebar({ navigation, currentRoute }) {
     const { width } = useWindowDimensions();
     const isDesktop = width > 768;
     const [userRole, setUserRole] = useState(null);
-    
-    // 🚀 NEW: Theme state management
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
@@ -28,7 +26,6 @@ export default function Sidebar({ navigation, currentRoute }) {
             const role = await AsyncStorage.getItem('userRole');
             setUserRole(role || 'SALESPERSON');
             
-            // Load saved theme preference
             const savedTheme = await AsyncStorage.getItem('appTheme');
             if (savedTheme === 'dark') setIsDarkMode(true);
         };
@@ -39,17 +36,15 @@ export default function Sidebar({ navigation, currentRoute }) {
 
     const visibleMenuItems = menuItems.filter(item => item.allowedRoles.includes(userRole));
 
-    // 🚀 NEW: Toggle function that saves to storage
     const toggleTheme = async () => {
         const newTheme = !isDarkMode;
         setIsDarkMode(newTheme);
         await AsyncStorage.setItem('appTheme', newTheme ? 'dark' : 'light');
         
-        // Note: To make the whole app dark, you would emit an event here 
-        // to tell your other screens to update their colors too!
+        // 🚀 NEW: Broadcast the theme change to the rest of the app!
+        DeviceEventEmitter.emit('themeChanged', newTheme ? 'dark' : 'light');
     };
 
-    // 🚀 NEW: Dynamic Theme Colors
     const theme = {
         background: isDarkMode ? '#121212' : '#ffffff',
         border: isDarkMode ? '#333333' : '#eeeeee',
@@ -75,7 +70,8 @@ export default function Sidebar({ navigation, currentRoute }) {
                 </View>
             </View>
 
-            <View style={styles.menuContainer}>
+            {/* 🚀 FIXED: Wrapped the menu items in a ScrollView so they don't overlap the footer */}
+            <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
                 {visibleMenuItems.map((item) => {
                     const isActive = currentRoute === item.route;
                     return (
@@ -103,14 +99,16 @@ export default function Sidebar({ navigation, currentRoute }) {
                         </TouchableOpacity>
                     );
                 })}
-            </View>
+            </ScrollView>
             
             <View style={[styles.footer, { borderTopColor: theme.border }]}>
-                {/* 🚀 NEW: The Theme Toggle Button */}
-                <TouchableOpacity style={[styles.themeToggleBtn, { borderColor: theme.border }]} onPress={toggleTheme}>
-                    <Text style={[styles.themeToggleText, { color: theme.textMain }]}>
-                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                    </Text>
+                {/* 🚀 UPGRADED: A sleek, modern toggle switch design */}
+                <TouchableOpacity style={[styles.themeToggleBtn, { backgroundColor: isDarkMode ? '#333' : '#f0f0f0', borderColor: theme.border }]} onPress={toggleTheme}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingHorizontal: 10, justifyContent: isDarkMode ? 'flex-end' : 'flex-start' }}>
+                        {!isDarkMode && <Text style={{ fontSize: 16, marginRight: 8 }}>☀️</Text>}
+                        <View style={[styles.toggleCircle, { backgroundColor: isDarkMode ? '#00D26A' : '#ffffff' }]} />
+                        {isDarkMode && <Text style={{ fontSize: 16, marginLeft: 8 }}>🌙</Text>}
+                    </View>
                 </TouchableOpacity>
                 
                 <Text style={styles.footerText}>© Shandilya Enterprises</Text>
@@ -189,17 +187,21 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
     themeToggleBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        borderWidth: 1,
-        borderRadius: 8,
+        height: 40,
+        borderRadius: 20,
         marginBottom: 15,
+        justifyContent: 'center',
+        borderWidth: 1,
     },
-    themeToggleText: {
-        fontSize: 13,
-        fontWeight: '700',
+    toggleCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
     },
     footerText: {
         fontSize: 12,

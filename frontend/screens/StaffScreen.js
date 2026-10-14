@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, useWindowDimensions, DeviceEventEmitter } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,9 +20,28 @@ export default function StaffScreen({ navigation }) {
     const [expandedStaffId, setExpandedStaffId] = useState(null);
     const [currentUserRole, setCurrentUserRole] = useState(null);
     const [isAddModalVisible, setAddModalVisible] = useState(false);
+    
+    // 🚀 NEW: State to track global theme
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
         fetchStaff();
+        
+        // 🚀 NEW: Load initial theme preference
+        const loadTheme = async () => {
+            const savedTheme = await AsyncStorage.getItem('appTheme');
+            if (savedTheme === 'dark') setIsDarkMode(true);
+        };
+        loadTheme();
+
+        // 🚀 NEW: Listen for theme changes from the Sidebar
+        const themeListener = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
+            setIsDarkMode(newTheme === 'dark');
+        });
+
+        return () => {
+            themeListener.remove();
+        };
     }, []);
 
     const fetchStaff = async () => {
@@ -48,7 +67,6 @@ export default function StaffScreen({ navigation }) {
         setExpandedStaffId(prevId => prevId === userId ? null : userId);
     };
 
-    // 🚀 NEW: Function to toggle suspension status
     const handleSuspendToggle = async (user) => {
         const isCurrentlySuspended = user.account_status === 'SUSPENDED';
         const actionWord = isCurrentlySuspended ? 'reactivate' : 'suspend';
@@ -64,7 +82,6 @@ export default function StaffScreen({ navigation }) {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 
-                // Immediately update local state so UI feels instant
                 setStaff(prev => prev.map(s => 
                     s.user_id === user.user_id ? { ...s, account_status: newStatus } : s
                 ));
@@ -85,9 +102,7 @@ export default function StaffScreen({ navigation }) {
         }
     };
 
-    // 🚀 NEW: Function to toggle user role
     const handleRoleUpdate = async (user) => {
-        // Only Admins are allowed to change roles based on our backend security
         if (currentUserRole !== 'ADMIN') {
             const msg = "Only Superadmins can modify staff roles.";
             Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Permission Denied", msg);
@@ -141,7 +156,8 @@ export default function StaffScreen({ navigation }) {
     };
 
     return (
-        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
+        // 🚀 FIXED: The main background color now responds to the Dark Mode toggle!
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: isDarkMode ? '#1e1e1e' : '#f4f7f6' }}>
             <StatusBar hidden={true} />
             <Sidebar navigation={navigation} currentRoute="Staff" />
 
@@ -250,7 +266,6 @@ export default function StaffScreen({ navigation }) {
                                         )}
                                     </TouchableOpacity>
 
-                                    {/* 🚀 FIXED: Wired up the buttons! */}
                                     {isExpanded && (
                                         <View style={styles.actionRow}>
                                             <TouchableOpacity 
