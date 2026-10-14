@@ -11,7 +11,7 @@ export const styles = StyleSheet.create({
     card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
     invoiceNumber: { fontSize: 18, fontWeight: 'bold', color: '#2c2c4d' },
-    grandTotal: { fontSize: 18, fontWeight: 'bold', color: '#7cb342' },
+    grandTotal: { fontSize: 18, fontWeight: 'bold', color: '#F57C00' },
     detailText: { fontSize: 14, color: '#666', marginBottom: 4 },
     boldLabel: { fontWeight: 'bold', color: '#333' },
     actionRow: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
@@ -44,8 +44,8 @@ export const styles = StyleSheet.create({
     dateLabel: { fontSize: 14, fontWeight: 'bold', color: '#666' },
     dateInput: { flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 5, paddingHorizontal: 8, paddingVertical: 6, marginHorizontal: 5, backgroundColor: '#f9f9f9' },
     reportControls: { flexDirection: 'row', gap: 10 },
-    actionBtn: { backgroundColor: '#7DBA45', paddingVertical: 12, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-    printBtn: { backgroundColor: '#7DBA45', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, marginRight: 10 },
+    actionBtn: { backgroundColor: '#F57C00', paddingVertical: 12, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    printBtn: { backgroundColor: '#F57C00', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, marginRight: 10 },
     printBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
     
     // === RETURN ITEM MODAL ===

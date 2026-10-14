@@ -18,7 +18,7 @@ export default StyleSheet.create({
     },
     // Highlights the card beautifully when the item is in the cart
     cardActive: {
-        borderColor: '#00D26A',
+        borderColor: '#F57C00',
         backgroundColor: '#F2FDF7', 
     },
     
@@ -80,11 +80,11 @@ export default StyleSheet.create({
     qtyControl: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#00D26A', // Vibrant Green
+        backgroundColor: '#F57C00', // Vibrant Green
         borderRadius: 20,
         height: 36,
         paddingHorizontal: 5,
-        shadowColor: '#00D26A',
+        shadowColor: '#F57C00',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

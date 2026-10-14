@@ -71,11 +71,11 @@ export const styles = StyleSheet.create({
         color: '#333',
     },
     infoBox: {
-        backgroundColor: '#e8f5e9',
+        backgroundColor: '#FFF3E0',
         padding: 15,
         borderRadius: 12,
         borderLeftWidth: 4,
-        borderLeftColor: '#00D26A',
+        borderLeftColor: '#F57C00',
         marginTop: 10,
     },
     infoText: {
@@ -90,11 +90,11 @@ export const styles = StyleSheet.create({
         borderTopColor: '#eee',
     },
     saveBtn: {
-        backgroundColor: '#00D26A',
+        backgroundColor: '#F57C00',
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
-        shadowColor: '#00D26A',
+        shadowColor: '#F57C00',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

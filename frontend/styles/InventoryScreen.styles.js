@@ -111,7 +111,7 @@ export const styles = StyleSheet.create({
     },
     updateBtn: {
         flex: 1,
-        backgroundColor: '#7cb342',
+        backgroundColor: '#F57C00',
         paddingVertical: 12,
         borderRadius: 25,
         alignItems: 'center',
@@ -132,14 +132,14 @@ export const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     heroBanner: {
-        backgroundColor: '#00D26A', // 🚀 The New Bill Green Background!
+        backgroundColor: '#F57C00', // 🚀 The New Bill Green Background!
         padding: 20,
         paddingTop: Platform.OS === 'web' ? 40 : 60,
         paddingBottom: 30,
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
         marginBottom: 20,
-        shadowColor: '#00D26A',
+        shadowColor: '#F57C00',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.2,
         shadowRadius: 15,
@@ -156,7 +156,7 @@ export const styles = StyleSheet.create({
     },
     pageSubtitle: {
         fontSize: 15,
-        color: '#e8f5e9', // Light green-white subtitle
+        color: '#FFF3E0', // Light green-white subtitle
         fontWeight: '500',
         marginTop: 5,
     },
@@ -298,7 +298,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cartBadge: {
-        backgroundColor: '#00D26A',
+        backgroundColor: '#F57C00',
         width: 32,
         height: 32,
         borderRadius: 16,
@@ -318,7 +318,7 @@ export const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     floatingCartTotal: {
-        color: '#00D26A',
+        color: '#F57C00',
         fontSize: 16,
         fontWeight: '800',
         letterSpacing: 0.5,

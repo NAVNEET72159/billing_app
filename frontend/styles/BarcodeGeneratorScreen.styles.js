@@ -91,7 +91,7 @@ export const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     generateBtn: {
-        backgroundColor: '#7cb342',
+        backgroundColor: '#F57C00',
         flex: 0.65,
         marginRight: 10,
     },

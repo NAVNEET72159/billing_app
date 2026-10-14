@@ -151,7 +151,7 @@ export default function StaffScreen({ navigation }) {
                 {Platform.OS === 'web' && (
                     <style type="text/css">{`
                         .hover-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-                        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important; border-color: #00D26A !important; }
+                        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(245, 124, 0, 0.15) !important; border-color: #F57C00 !important; }
                         .role-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
                         .badge-manager { background-color: #2196F3; }
                         .badge-sales { background-color: #FF9800; }
@@ -180,7 +180,7 @@ export default function StaffScreen({ navigation }) {
                 </View>
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#F57C00" style={{ marginTop: 50 }} />
                 ) : (
                     <FlatList 
                         data={filteredStaff}
@@ -267,7 +267,7 @@ export default function StaffScreen({ navigation }) {
                                                 style={styles.deleteBtn} 
                                                 onPress={() => handleSuspendToggle(item)}
                                             >
-                                                <Text style={[styles.actionBtnText, { color: item.account_status === 'ACTIVE' ? '#e53935' : '#00D26A' }]}>
+                                                <Text style={[styles.actionBtnText, { color: item.account_status === 'ACTIVE' ? '#e53935' : '#F57C00' }]}>
                                                     {item.account_status === 'ACTIVE' ? '🚫 SUSPEND' : '✅ REACTIVATE'}
                                                 </Text>
                                             </TouchableOpacity>

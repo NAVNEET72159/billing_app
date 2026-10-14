@@ -8,12 +8,12 @@ export const styles = StyleSheet.create({
     
     // --- HERO BANNER ---
     heroBanner: {
-        backgroundColor: '#00D26A', // Vibrant brand green
+        backgroundColor: '#F57C00', // Vibrant brand green
         paddingTop: 20,
         paddingBottom: 40,
         borderBottomLeftRadius: 35,
         borderBottomRightRadius: 35,
-        shadowColor: '#00D26A',
+        shadowColor: '#F57C00',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.25,
         shadowRadius: 15,
@@ -96,7 +96,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cartBadge: {
-        backgroundColor: '#00D26A',
+        backgroundColor: '#F57C00',
         borderRadius: 15,
         width: 30,
         height: 30,
@@ -115,7 +115,7 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     floatingCartTotal: {
-        color: '#00D26A', // Green text pop
+        color: '#F57C00', // Green text pop
         fontSize: 18,
         fontWeight: '900',
     },
@@ -196,7 +196,7 @@ export const styles = StyleSheet.create({
     sideCartItemPrice: {
         fontSize: 16,
         fontWeight: '900',
-        color: '#00D26A',
+        color: '#F57C00',
     },
     sideCartItemBottom: {
         flexDirection: 'row',

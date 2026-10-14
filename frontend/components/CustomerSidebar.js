@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     },
     arrowIcon: {
         fontSize: 20,
-        color: '#00D26A',
+        color: '#F57C00',
     },
     emptyText: {
         textAlign: 'center',

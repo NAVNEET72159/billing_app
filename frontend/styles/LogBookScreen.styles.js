@@ -43,7 +43,7 @@ export const styles = StyleSheet.create({
         padding: 20,
         marginBottom: 15,
         borderLeftWidth: 6,
-        borderLeftColor: '#7DBA45',
+        borderLeftColor: '#F57C00',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,

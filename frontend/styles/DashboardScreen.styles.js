@@ -11,14 +11,14 @@ export default StyleSheet.create({
   
   // --- WELCOME HERO BANNER ---
   welcomeSection: {
-    backgroundColor: '#00D26A', // 🚀 The exact vibrant green from your login screen
+    backgroundColor: '#F57C00', // 🚀 The exact vibrant green from your login screen
     paddingHorizontal: 25,
     paddingTop: 30,
     paddingBottom: 60, // Extra bottom padding for the overlap effect
     borderBottomLeftRadius: 35,
     borderBottomRightRadius: 35,
     marginBottom: -35, // Negative margin pulls the cards UP to overlap the green banner
-    shadowColor: '#00D26A',
+    shadowColor: '#F57C00',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
@@ -105,7 +105,7 @@ export default StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Helvetica Neue' : 'sans-serif',
   },
   highlightCardText: {
-    color: '#00D26A', // Makes the text pop in the brand green!
+    color: '#F57C00', // Makes the text pop in the brand green!
   },
 
   // --- HIDDEN SIGNATURE ---

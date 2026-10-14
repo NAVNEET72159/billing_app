@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#00D26A', // Vibrant Green
+    backgroundColor: '#F57C00', // Vibrant Green
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     alignItems: 'center',
     justifyContent: 'center',

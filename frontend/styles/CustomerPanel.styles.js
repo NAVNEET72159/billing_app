@@ -8,12 +8,12 @@ export const styles = StyleSheet.create({
     
     // --- HERO BANNER ---
     heroBanner: {
-        backgroundColor: '#00D26A', // Enforces vibrant green!
+        backgroundColor: '#F57C00', // Enforces vibrant green!
         paddingTop: 25,
         paddingBottom: 40,
         borderBottomLeftRadius: 35,
         borderBottomRightRadius: 35,
-        shadowColor: '#00D26A',
+        shadowColor: '#F57C00',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.25,
         shadowRadius: 15,

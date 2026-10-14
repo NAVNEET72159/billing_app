@@ -77,7 +77,7 @@ export const styles = StyleSheet.create({
         marginTop: 10,
     },
     submitBtn: {
-        backgroundColor: '#7DBA45',
+        backgroundColor: '#F57C00',
         flex: 0.48,
         borderRadius: 20,
         paddingVertical: 15,
@@ -107,7 +107,7 @@ export const styles = StyleSheet.create({
         marginRight: 15,
     },
     newButton: {
-        backgroundColor: '#7DBA45',
+        backgroundColor: '#F57C00',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 8,
@@ -162,7 +162,7 @@ export const styles = StyleSheet.create({
     },
     updateBtn: {
         flex: 1,
-        backgroundColor: '#7DBA45',
+        backgroundColor: '#F57C00',
         paddingVertical: 12,
         alignItems: 'center',
     },
@@ -320,7 +320,7 @@ export const styles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 12,
         borderLeftWidth: 5,
-        borderLeftColor: '#7DBA45',
+        borderLeftColor: '#F57C00',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -340,7 +340,7 @@ export const styles = StyleSheet.create({
         flex: 1,
     },
     yieldBadge: {
-        backgroundColor: '#e8f5e9',
+        backgroundColor: '#FFF3E0',
         paddingHorizontal: 10,
         paddingVertical: 5,
         borderRadius: 20,

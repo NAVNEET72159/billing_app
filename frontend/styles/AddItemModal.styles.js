@@ -44,7 +44,7 @@ export const styles = StyleSheet.create({
         marginBottom: 20 
     },
     barcodeBtn: { 
-        backgroundColor: '#7cb342',
+        backgroundColor: '#F57C00',
         borderRadius: 20, 
         paddingVertical: 10, 
         paddingHorizontal: 15,
@@ -141,7 +141,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
     },
     groupModalSubmitBtn: {
-        backgroundColor: '#7DBA45', // Green match
+        backgroundColor: '#F57C00', // Green match
         flex: 0.48,
         borderRadius: 15,
         paddingVertical: 15,

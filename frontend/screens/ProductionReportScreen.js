@@ -190,15 +190,15 @@ export default function ProductionReportScreen({ navigation }) {
 
                 {/* 🚀 Sleek Inline Hero Banner */}
                 <View style={{
-                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    backgroundColor: '#F57C00', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
                     paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
-                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    marginBottom: 15, shadowColor: '#F57C00', shadowOffset: { width: 0, height: 10 },
                     shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
                 }}>
                     <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
                         Production
                     </Text>
-                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                    <Text style={{ fontSize: 15, color: '#FFF3E0', fontWeight: '500', marginTop: 5 }}>
                         Manage manufacturing batches and history
                     </Text>
                 </View>

@@ -50,8 +50,8 @@ export default function Sidebar({ navigation, currentRoute }) {
         border: isDarkMode ? '#333333' : '#eeeeee',
         textMain: isDarkMode ? '#ffffff' : '#1a1a1a',
         textMuted: isDarkMode ? '#aaaaaa' : '#666666',
-        hoverBg: isDarkMode ? '#1e1e1e' : '#f0fdf4',
-        activeBg: isDarkMode ? 'rgba(0, 210, 106, 0.15)' : '#f0fdf4',
+        hoverBg: isDarkMode ? '#1e1e1e' : '#FFF8E1',
+        activeBg: isDarkMode ? 'rgba(245, 124, 0, 0.15)' : '#FFF8E1',
     };
 
     return (
@@ -64,8 +64,8 @@ export default function Sidebar({ navigation, currentRoute }) {
             )}
 
             <View style={styles.logoContainer}>
-                <Text style={[styles.logoText, { color: theme.textMain }]}>PYSSUM <Text style={{color: '#00D26A'}}>POS</Text></Text>
-                <View style={[styles.roleBadge, { backgroundColor: isDarkMode ? '#00D26A20' : '#e8f5e9' }]}>
+                <Text style={[styles.logoText, { color: theme.textMain }]}>PYSSUM <Text style={{color: '#F57C00'}}>POS</Text></Text>
+                <View style={[styles.roleBadge, { backgroundColor: isDarkMode ? '#F57C0020' : '#FFF3E0' }]}>
                     <Text style={styles.roleBadgeText}>{userRole}</Text>
                 </View>
             </View>
@@ -86,12 +86,12 @@ export default function Sidebar({ navigation, currentRoute }) {
                         >
                             <Image 
                                 source={item.image} 
-                                style={[styles.menuIcon, { tintColor: isActive ? '#00D26A' : theme.textMuted }]} 
+                                style={[styles.menuIcon, { tintColor: isActive ? '#F57C00' : theme.textMuted }]} 
                                 resizeMode="contain"
                             />
                             <Text style={[
                                 styles.menuText, 
-                                { color: isActive ? '#00D26A' : theme.textMuted },
+                                { color: isActive ? '#F57C00' : theme.textMuted },
                                 isActive && styles.activeMenuText
                             ]}>
                                 {item.title}
@@ -106,7 +106,7 @@ export default function Sidebar({ navigation, currentRoute }) {
                 <TouchableOpacity style={[styles.themeToggleBtn, { backgroundColor: isDarkMode ? '#333' : '#f0f0f0', borderColor: theme.border }]} onPress={toggleTheme}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingHorizontal: 10, justifyContent: isDarkMode ? 'flex-end' : 'flex-start' }}>
                         {!isDarkMode && <Text style={{ fontSize: 16, marginRight: 8 }}>☀️</Text>}
-                        <View style={[styles.toggleCircle, { backgroundColor: isDarkMode ? '#00D26A' : '#ffffff' }]} />
+                        <View style={[styles.toggleCircle, { backgroundColor: isDarkMode ? '#F57C00' : '#ffffff' }]} />
                         {isDarkMode && <Text style={{ fontSize: 16, marginLeft: 8 }}>🌙</Text>}
                     </View>
                 </TouchableOpacity>
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
     roleBadgeText: {
-        color: '#00D26A',
+        color: '#F57C00',
         fontSize: 11,
         fontWeight: '800',
         letterSpacing: 0.5,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     },
     activeMenuItem: {
         borderRightWidth: 3,
-        borderRightColor: '#00D26A',
+        borderRightColor: '#F57C00',
     },
     menuIcon: {
         width: 22,

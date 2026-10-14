@@ -249,7 +249,7 @@ export default function NewBillScreen({ navigation }) {
 
                 {/* LIST VIEW */}
                 {loading ? (
-                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#F57C00" style={{ marginTop: 50 }} />
                 ) : (
                     <FlatList 
                         data={filteredInventory}

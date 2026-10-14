@@ -97,7 +97,7 @@ export default function LogInScreen({ navigation, setToken }) {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       // 🚀 FIXED: Dynamically switches to column on phones, row on PC
-      style={[styles.container, { flexDirection: isDesktop ? 'row' : 'column', flex: 1, backgroundColor: '#00D26A' }]}
+      style={[styles.container, { flexDirection: isDesktop ? 'row' : 'column', flex: 1, backgroundColor: '#F57C00' }]}
     >
       <StatusBar hidden={true} />
       

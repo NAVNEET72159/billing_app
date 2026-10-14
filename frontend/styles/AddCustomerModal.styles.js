@@ -99,7 +99,7 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold' 
     },
     submitBtn: { 
-        backgroundColor: '#7cb342' 
+        backgroundColor: '#F57C00' 
     },
     submitBtnText: { 
         color: '#fff', 

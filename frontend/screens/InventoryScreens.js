@@ -130,8 +130,8 @@ export default function InventoryScreen({ navigation }) {
                         }
                         .hover-card:hover {
                             transform: translateY(-5px);
-                            box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important;
-                            border-color: #00D26A !important;
+                            box-shadow: 0 15px 30px rgba(245, 124, 0, 0.15) !important;
+                            border-color: #F57C00 !important;
                         }
                         .hover-btn {
                             transition: all 0.2s ease;
@@ -181,7 +181,7 @@ export default function InventoryScreen({ navigation }) {
                 </View>
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#F57C00" style={{ marginTop: 50 }} />
                 ) : (
                     <FlatList 
                         data={filteredInventory}
@@ -192,7 +192,7 @@ export default function InventoryScreen({ navigation }) {
                             const isExpanded = item.item_id === expandedItemId;
                             const LOW_STOCK_THRESHOLD = 10;
                             const currentStock = item.stock || 0;
-                            const stockColor = currentStock <= LOW_STOCK_THRESHOLD ? '#e53935' : '#00D26A';
+                            const stockColor = currentStock <= LOW_STOCK_THRESHOLD ? '#e53935' : '#F57C00';
                         
                             return (
                                 <View style={{ marginBottom: 15 }}>

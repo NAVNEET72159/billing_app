@@ -130,7 +130,7 @@ export default function ReportsScreen({ navigation }) {
             <head>
                 <style>
                     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
-                    .header { text-align: center; border-bottom: 2px solid #7DBA45; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header { text-align: center; border-bottom: 2px solid #F57C00; padding-bottom: 10px; margin-bottom: 20px; }
                     .header h1 { margin: 0; color: #2c2c4d; text-transform: uppercase; letter-spacing: 2px; }
                     .header h3 { margin: 5px 0 0 0; color: #666; }
                     .timestamp { text-align: right; font-size: 12px; color: #888; margin-bottom: 10px; }
@@ -201,15 +201,15 @@ export default function ReportsScreen({ navigation }) {
 
                 {/* 🚀 Sleek Inline Hero Banner */}
                 <View style={{
-                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    backgroundColor: '#F57C00', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
                     paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
-                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    marginBottom: 15, shadowColor: '#F57C00', shadowOffset: { width: 0, height: 10 },
                     shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
                 }}>
                     <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
                         Reports
                     </Text>
-                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                    <Text style={{ fontSize: 15, color: '#FFF3E0', fontWeight: '500', marginTop: 5 }}>
                         Analyze stock, sales, and financial performance
                     </Text>
                 </View>
@@ -228,7 +228,7 @@ export default function ReportsScreen({ navigation }) {
                 </View>
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#F57C00" style={{ marginTop: 50 }} />
                 ) : (
                     <View style={{ flex: 1 }}>
                         {/* ========================================= */}
@@ -264,7 +264,7 @@ export default function ReportsScreen({ navigation }) {
                                                 <Text style={styles.itemDetail}>Barcode: {item.barcode || 'N/A'}</Text>
                                             </View>
                                             <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                                                <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#00D26A' }]}>
+                                                <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#F57C00' }]}>
                                                     {item.stock} {item.unit || ''}
                                                 </Text>
                                             </View>
@@ -328,7 +328,7 @@ export default function ReportsScreen({ navigation }) {
                                                 <Text style={styles.itemDetail}>Captured: {new Date(item.snapshot_date).toLocaleDateString()}</Text>
                                             </View>
                                             <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                                                <Text style={[styles.itemStock, { color: '#00D26A' }]}>
+                                                <Text style={[styles.itemStock, { color: '#F57C00' }]}>
                                                     {item.closing_stock} {item.unit || ''}
                                                 </Text>
                                             </View>

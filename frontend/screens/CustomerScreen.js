@@ -115,15 +115,15 @@ export default function CustomerScreen({ navigation }) {
                         }
                         .hover-card:hover {
                             transform: translateY(-5px);
-                            box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important;
-                            border-color: #00D26A !important;
+                            box-shadow: 0 15px 30px rgba(245, 124, 0, 0.15) !important;
+                            border-color: #F57C00 !important;
                         }
                         .hover-btn {
                             transition: all 0.2s ease;
                         }
                         .hover-btn:hover {
                             transform: scale(1.05);
-                            background-color: #00b359 !important;
+                            background-color: #E65100 !important;
                         }
                     `}</style>
                 )}
@@ -150,7 +150,7 @@ export default function CustomerScreen({ navigation }) {
 
                 {/* UPGRADED LIST VIEW */}
                 {loading ? (
-                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#F57C00" style={{ marginTop: 50 }} />
                 ) : (
                     <FlatList 
                         data={filteredCustomers}
@@ -173,10 +173,10 @@ export default function CustomerScreen({ navigation }) {
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isExpanded ? 18 : 0 }}>
                                             <View style={{ 
                                                 width: 54, height: 54, borderRadius: 27, 
-                                                backgroundColor: '#e8f5e9', justifyContent: 'center', alignItems: 'center', 
-                                                marginRight: 15, borderWidth: 1, borderColor: '#c8e6c9' 
+                                                backgroundColor: '#FFF3E0', justifyContent: 'center', alignItems: 'center', 
+                                                marginRight: 15, borderWidth: 1, borderColor: '#FFE0B2' 
                                             }}>
-                                                <Text style={{ color: '#00D26A', fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>
+                                                <Text style={{ color: '#F57C00', fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>
                                                     {getInitials(item.customer_name)}
                                                 </Text>
                                             </View>

@@ -206,15 +206,15 @@ export default function RawMaterialsScreen({ navigation }) {
 
                 {/* 🚀 Sleek Inline Hero Banner */}
                 <View style={{
-                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    backgroundColor: '#F57C00', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
                     paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
-                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    marginBottom: 15, shadowColor: '#F57C00', shadowOffset: { width: 0, height: 10 },
                     shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
                 }}>
                     <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
                         Raw Materials
                     </Text>
-                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5, marginBottom: 15 }}>
+                    <Text style={{ fontSize: 15, color: '#FFF3E0', fontWeight: '500', marginTop: 5, marginBottom: 15 }}>
                         Manage inventory for manufacturing
                     </Text>
                     
@@ -238,7 +238,7 @@ export default function RawMaterialsScreen({ navigation }) {
                 </View>
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#F57C00" style={{ marginTop: 50 }} />
                 ) : (
                     <FlatList 
                         data={filteredMaterials}
@@ -263,7 +263,7 @@ export default function RawMaterialsScreen({ navigation }) {
                                             <Text style={styles.itemDetail}>Purchase Rate: ₹{item.purchase_rate}</Text>
                                         </View>
                                         <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                                            <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#00D26A' }]}>
+                                            <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#F57C00' }]}>
                                                 STOCK: {item.stock} {item.unit || ''}
                                             </Text>
                                         </View>
@@ -385,7 +385,7 @@ export default function RawMaterialsScreen({ navigation }) {
                             <Text style={styles.label}>Purchase Rate (₹):</Text>
                             <TextInput style={styles.input} keyboardType="numeric" value={updateData.purchase_rate} onChangeText={(text) => setUpdateData({...updateData, purchase_rate: text})} />
 
-                            <Text style={[styles.label, { color: '#00D26A', fontWeight: 'bold' }]}>Current Stock: {updateData.current_stock} {updateData.unit || ''}</Text>
+                            <Text style={[styles.label, { color: '#F57C00', fontWeight: 'bold' }]}>Current Stock: {updateData.current_stock} {updateData.unit || ''}</Text>
                             
                             <Text style={styles.label}>Add New Stock:</Text>
                             <TextInput style={styles.input} keyboardType="numeric" placeholder="e.g. 50" value={updateData.add_stock} onChangeText={(text) => setUpdateData({...updateData, add_stock: text})} />

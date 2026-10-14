@@ -74,7 +74,7 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold' 
     },
     printBtn: { 
-        backgroundColor: '#7DBA45', 
+        backgroundColor: '#F57C00', 
         paddingHorizontal: 15, 
         paddingVertical: 10, 
         borderRadius: 8 

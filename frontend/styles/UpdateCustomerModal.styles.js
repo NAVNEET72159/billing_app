@@ -59,11 +59,11 @@ export const styles = StyleSheet.create({
         borderTopColor: '#eee',
     },
     saveBtn: {
-        backgroundColor: '#00D26A',
+        backgroundColor: '#F57C00',
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
-        shadowColor: '#00D26A',
+        shadowColor: '#F57C00',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -137,7 +137,7 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold' 
     },
     submitBtn: { 
-        backgroundColor: '#7cb342' }
+        backgroundColor: '#F57C00' }
         ,
     submitBtnText: { 
         color: '#fff', 

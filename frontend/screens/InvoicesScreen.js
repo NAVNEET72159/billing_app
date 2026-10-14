@@ -123,7 +123,7 @@ export default function InvoiceScreen({ navigation }) {
             <head>
                 <style>
                     body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-                    .header { text-align: center; border-bottom: 2px solid #7DBA45; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header { text-align: center; border-bottom: 2px solid #F57C00; padding-bottom: 10px; margin-bottom: 20px; }
                     .header h1 { margin: 0; color: #2c2c4d; }
                     .header h3 { margin: 5px 0 0 0; color: #666; }
                     table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
@@ -383,7 +383,7 @@ export default function InvoiceScreen({ navigation }) {
                 {Platform.OS === 'web' && (
                     <style type="text/css">{`
                         .hover-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-                        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important; border-color: #00D26A !important; }
+                        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(245, 124, 0, 0.15) !important; border-color: #F57C00 !important; }
                     `}</style>
                 )}
 
@@ -391,15 +391,15 @@ export default function InvoiceScreen({ navigation }) {
                 
                 {/* 🚀 Sleek Inline Hero Banner */}
                 <View style={{
-                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    backgroundColor: '#F57C00', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
                     paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
-                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    marginBottom: 15, shadowColor: '#F57C00', shadowOffset: { width: 0, height: 10 },
                     shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
                 }}>
                     <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
                         Billing History
                     </Text>
-                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                    <Text style={{ fontSize: 15, color: '#FFF3E0', fontWeight: '500', marginTop: 5 }}>
                         Manage, reprint, and review past invoices
                     </Text>
                 </View>
@@ -525,7 +525,7 @@ export default function InvoiceScreen({ navigation }) {
                                 <Text style={styles.receiptText}><Text style={styles.boldLabel}>Invoice: </Text>{selectedInvoice.invoice_number}</Text>
                                 <Text style={styles.receiptText}><Text style={styles.boldLabel}>Date: </Text>{formatDate(selectedInvoice.sale_date)}</Text>
                                 <Text style={styles.receiptText}><Text style={styles.boldLabel}>Payment: </Text>{selectedInvoice.payment_method || "CASH"}</Text>
-                                <Text style={[styles.receiptText, { marginTop: 10, fontSize: 18, color: '#7cb342', fontWeight: 'bold' }]}>
+                                <Text style={[styles.receiptText, { marginTop: 10, fontSize: 18, color: '#F57C00', fontWeight: 'bold' }]}>
                                     Grand Total: ₹{invoiceItems.reduce((sum, i) => sum + parseFloat(i.amount), 0).toFixed(2)}
                                 </Text>
                             </View>
