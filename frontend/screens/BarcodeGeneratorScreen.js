@@ -1,18 +1,26 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar'; // 🚀 Added StatusBar for unified look
 import Header from '../components/Header';
 import { styles } from '../styles/BarcodeGeneratorScreen.styles';
 import AddItemModal from '../components/AddItemModal'; 
 import { captureRef, MediaLibrary } from '../components/utils/NativeModules';
+import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
 
 export default function BarcodeGeneratorScreen({ navigation }) {
+    // 🚀 Detect if the user is on a desktop computer
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
     const [barcode, setBarcode] = useState('');
     const [isAddModalVisible, setAddModalVisible] = useState(false);
     const barcodeViewRef = useRef();
+    
     const generateRandomBarcode = () => {
         const newCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
         setBarcode(newCode);
     };
+
     const renderVisualBarcode = () => {
         if (!barcode) 
             return null;
@@ -113,66 +121,76 @@ export default function BarcodeGeneratorScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerWrapper}><Header /></View>
-            <Text style={styles.pageTitle}>Barcode Generator</Text>
+        // 🚀 THE MAGIC LAYOUT WRAPPER
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
+            <StatusBar hidden={true} />
             
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* 🚀 THE SIDEBAR */}
+            <Sidebar navigation={navigation} currentRoute="Barcode" />
+
+            {/* 🚀 MAIN CONTENT AREA */}
+            <View style={[styles.container, { flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }]}>
+                <View style={styles.headerWrapper}><Header /></View>
+                <Text style={styles.pageTitle}>Barcode Generator</Text>
                 
-                {/* The Visual Barcode Display Card */}
-                <View style={styles.displayCard} ref={barcodeViewRef} collapsable={false} >
-                    {barcode ? (
-                        <View style={styles.barcodeContainer}>
-                            {renderVisualBarcode()}
-                            <Text style={styles.barcodeText} letterSpacing={8}>{barcode}</Text>
-                        </View>
-                    ) : (
-                        <View style={styles.placeholderContainer}>
-                            <Text style={styles.placeholderText}>No Barcode Generated</Text>
-                            <Text style={styles.placeholderSubtext}>Click below to create a new 12-digit code</Text>
-                        </View>
-                    )}
-                </View>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* The Visual Barcode Display Card */}
+                    <View style={styles.displayCard} ref={barcodeViewRef} collapsable={false} >
+                        {barcode ? (
+                            <View style={styles.barcodeContainer}>
+                                {renderVisualBarcode()}
+                                <Text style={styles.barcodeText} letterSpacing={8}>{barcode}</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.placeholderContainer}>
+                                <Text style={styles.placeholderText}>No Barcode Generated</Text>
+                                <Text style={styles.placeholderSubtext}>Click below to create a new 12-digit code</Text>
+                            </View>
+                        )}
+                    </View>
 
-                <View style={styles.controlsContainer}>
-                    <Text style={styles.label}>Custom Barcode (Optional)</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        keyboardType="numeric"
-                        maxLength={15}
-                        placeholder="Type a custom code..."
-                        value={barcode}
-                        onChangeText={setBarcode}
-                    />
+                    <View style={styles.controlsContainer}>
+                        <Text style={styles.label}>Custom Barcode (Optional)</Text>
+                        <TextInput 
+                            style={styles.input} 
+                            keyboardType="numeric"
+                            maxLength={15}
+                            placeholder="Type a custom code..."
+                            value={barcode}
+                            onChangeText={setBarcode}
+                        />
 
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.btn, styles.generateBtn]} onPress={generateRandomBarcode}>
-                            <Text style={styles.generateBtnText}>Generate Random</Text>
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity style={[styles.btn, styles.generateBtn]} onPress={generateRandomBarcode}>
+                                <Text style={styles.generateBtnText}>Generate Random</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity style={[styles.btn, styles.clearBtn]} onPress={() => setBarcode('')}>
+                                <Text style={styles.clearBtnText}>Clear</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+                            <Text style={styles.saveBtnText}>Assign to Inventory Item</Text>
                         </TouchableOpacity>
-                        
-                        <TouchableOpacity style={[styles.btn, styles.clearBtn]} onPress={() => setBarcode('')}>
-                            <Text style={styles.clearBtnText}>Clear</Text>
+                        <TouchableOpacity style={styles.downloadBtn} onPress={saveBarcodeLocally}>
+                            <Text style={styles.downloadBtnText}>⬇️ Save as PNG</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                        <Text style={styles.saveBtnText}>Assign to Inventory Item</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.downloadBtn} onPress={saveBarcodeLocally}>
-                        <Text style={styles.downloadBtnText}>⬇️ Save as PNG</Text>
-                    </TouchableOpacity>
-                </View>
+                </ScrollView>
 
-            </ScrollView>
-            <AddItemModal 
-                visible={isAddModalVisible}
-                onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
-                initialBarcode={barcode}
-                onAddSuccess={() => {
-                    setBarcode('');
-                    navigation.navigate('Inventory');
-                }}
-            />
+                <AddItemModal 
+                    visible={isAddModalVisible}
+                    onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
+                    initialBarcode={barcode}
+                    onAddSuccess={() => {
+                        setBarcode('');
+                        navigation.navigate('Inventory');
+                    }}
+                />
+            </View>
         </View>
     );
 }

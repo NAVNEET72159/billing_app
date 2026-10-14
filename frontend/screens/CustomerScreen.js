@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,8 +9,13 @@ import SearchBar from '../components/SearchBar';
 import { API_URL } from '../config/api';
 import AddCustomerModal from '../components/AddCustomerModal';
 import UpdateCustomerModal from '../components/UpdateCustomerModal';
+import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
 
 export default function CustomerScreen({ navigation }) {
+    // 🚀 Detect if the user is on a desktop computer
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
@@ -84,7 +89,6 @@ export default function CustomerScreen({ navigation }) {
         (c.phone_number || '').includes(searchText)
     );
 
-    // 🚀 NEW: Helper function to generate clean Avatar Initials
     const getInitials = (name) => {
         if (!name) return '👤';
         const parts = name.trim().split(' ').filter(Boolean);
@@ -93,167 +97,167 @@ export default function CustomerScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
+        // 🚀 THE MAGIC LAYOUT WRAPPER
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
             <StatusBar hidden={true} />
             
-            {/* 🚀 WEB-ONLY HOVER ANIMATIONS */}
-            {Platform.OS === 'web' && (
-                <style type="text/css">{`
-                    .hover-card {
-                        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-                    }
-                    .hover-card:hover {
-                        transform: translateY(-5px);
-                        box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important;
-                        border-color: #00D26A !important;
-                    }
-                    .hover-btn {
-                        transition: all 0.2s ease;
-                    }
-                    .hover-btn:hover {
-                        transform: scale(1.05);
-                        background-color: #00b359 !important;
-                    }
-                `}</style>
-            )}
+            {/* 🚀 THE SIDEBAR */}
+            <Sidebar navigation={navigation} currentRoute="Customers" />
 
-            <Header />
-            
-            {/* 🚀 Sleek Hero Banner */}
-            <View style={styles.heroBanner}>
-                <View style={styles.heroHeader}>
-                    <Text style={styles.pageTitle}>Customers</Text>
-                    <Text style={styles.pageSubtitle}>Manage your client directory</Text>
-                </View>
-                <View style={styles.searchWrapper}>
-                    <View style={styles.searchRow}>
-                        <SearchBar 
-                            placeholder="Search name or phone..." 
-                            value={searchText}
-                            onChangeText={setSearchText}
-                            containerStyle={styles.searchContainer} 
-                        />
+            {/* 🚀 MAIN CONTENT AREA */}
+            <View style={{ flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
+                
+                {/* WEB-ONLY HOVER ANIMATIONS */}
+                {Platform.OS === 'web' && (
+                    <style type="text/css">{`
+                        .hover-card {
+                            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                        }
+                        .hover-card:hover {
+                            transform: translateY(-5px);
+                            box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important;
+                            border-color: #00D26A !important;
+                        }
+                        .hover-btn {
+                            transition: all 0.2s ease;
+                        }
+                        .hover-btn:hover {
+                            transform: scale(1.05);
+                            background-color: #00b359 !important;
+                        }
+                    `}</style>
+                )}
+
+                <Header />
+                
+                {/* Sleek Hero Banner */}
+                <View style={styles.heroBanner}>
+                    <View style={styles.heroHeader}>
+                        <Text style={styles.pageTitle}>Customers</Text>
+                        <Text style={styles.pageSubtitle}>Manage your client directory</Text>
+                    </View>
+                    <View style={styles.searchWrapper}>
+                        <View style={styles.searchRow}>
+                            <SearchBar 
+                                placeholder="Search name or phone..." 
+                                value={searchText}
+                                onChangeText={setSearchText}
+                                containerStyle={styles.searchContainer} 
+                            />
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* 🚀 UPGRADED LIST VIEW */}
-            {loading ? (
-                <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
-            ) : (
-                <FlatList 
-                    data={filteredCustomers}
-                    keyExtractor={(item, index) => item.customer_id ? item.customer_id.toString() : index.toString()}
-                    contentContainerStyle={styles.listContainer} 
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => {
-                        const isExpanded = item.customer_id === expandedCustomerId;
-                        
-                        // Smart address formatting
-                        const fullAddress = [item.current_address, item.city, item.state, item.pincode]
-                            .filter(Boolean).join(', ');
+                {/* UPGRADED LIST VIEW */}
+                {loading ? (
+                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                ) : (
+                    <FlatList 
+                        data={filteredCustomers}
+                        keyExtractor={(item, index) => item.customer_id ? item.customer_id.toString() : index.toString()}
+                        contentContainerStyle={styles.listContainer} 
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => {
+                            const isExpanded = item.customer_id === expandedCustomerId;
+                            const fullAddress = [item.current_address, item.city, item.state, item.pincode]
+                                .filter(Boolean).join(', ');
 
-                        return (
-                            <View style={{ marginBottom: 15 }}>
-                                <TouchableOpacity 
-                                    style={[styles.card, { padding: 20 }, isExpanded && styles.cardExpanded]} 
-                                    activeOpacity={0.9}
-                                    onPress={() => toggleExpand(item.customer_id)}
-                                    className="hover-card"
-                                >
-                                    {/* --- MAIN CARD ROW --- */}
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isExpanded ? 18 : 0 }}>
-                                        {/* Avatar Bubble */}
-                                        <View style={{ 
-                                            width: 54, height: 54, borderRadius: 27, 
-                                            backgroundColor: '#e8f5e9', justifyContent: 'center', alignItems: 'center', 
-                                            marginRight: 15, borderWidth: 1, borderColor: '#c8e6c9' 
-                                        }}>
-                                            <Text style={{ color: '#00D26A', fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>
-                                                {getInitials(item.customer_name)}
-                                            </Text>
+                            return (
+                                <View style={{ marginBottom: 15 }}>
+                                    <TouchableOpacity 
+                                        style={[styles.card, { padding: 20 }, isExpanded && styles.cardExpanded]} 
+                                        activeOpacity={0.9}
+                                        onPress={() => toggleExpand(item.customer_id)}
+                                        className="hover-card"
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isExpanded ? 18 : 0 }}>
+                                            <View style={{ 
+                                                width: 54, height: 54, borderRadius: 27, 
+                                                backgroundColor: '#e8f5e9', justifyContent: 'center', alignItems: 'center', 
+                                                marginRight: 15, borderWidth: 1, borderColor: '#c8e6c9' 
+                                            }}>
+                                                <Text style={{ color: '#00D26A', fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>
+                                                    {getInitials(item.customer_name)}
+                                                </Text>
+                                            </View>
+                                            
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }} numberOfLines={1}>
+                                                    {item.customer_name}
+                                                </Text>
+                                                <Text style={{ fontSize: 14, color: '#666', fontWeight: '600' }}>
+                                                    📞 {item.phone_number}
+                                                </Text>
+                                            </View>
+
+                                            <View>
+                                                <Text style={{ color: '#ccc', fontSize: 16, fontWeight: 'bold' }}>
+                                                    {isExpanded ? '▲' : '▼'}
+                                                </Text>
+                                            </View>
                                         </View>
                                         
-                                        {/* Name & Phone */}
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }} numberOfLines={1}>
-                                                {item.customer_name}
-                                            </Text>
-                                            <Text style={{ fontSize: 14, color: '#666', fontWeight: '600' }}>
-                                                📞 {item.phone_number}
-                                            </Text>
-                                        </View>
+                                        {isExpanded && (
+                                            <View style={{ paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+                                                <View style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }}>
+                                                    <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>✉️</Text>
+                                                    <Text style={{ fontSize: 15, color: '#444', flex: 1, fontWeight: '500' }}>
+                                                        {item.email || 'No email provided'}
+                                                    </Text>
+                                                </View>
+                                                <View style={{ flexDirection: 'row' }}>
+                                                    <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>📍</Text>
+                                                    <Text style={{ fontSize: 14, color: '#555', flex: 1, lineHeight: 22 }}>
+                                                        {fullAddress || 'No address provided'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
 
-                                        {/* Expand Chevron */}
-                                        <View>
-                                            <Text style={{ color: '#ccc', fontSize: 16, fontWeight: 'bold' }}>
-                                                {isExpanded ? '▲' : '▼'}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    
-                                    {/* --- EXPANDED DETAILS --- */}
                                     {isExpanded && (
-                                        <View style={{ paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
-                                            <View style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }}>
-                                                <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>✉️</Text>
-                                                <Text style={{ fontSize: 15, color: '#444', flex: 1, fontWeight: '500' }}>
-                                                    {item.email || 'No email provided'}
-                                                </Text>
-                                            </View>
-                                            <View style={{ flexDirection: 'row' }}>
-                                                <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>📍</Text>
-                                                <Text style={{ fontSize: 14, color: '#555', flex: 1, lineHeight: 22 }}>
-                                                    {fullAddress || 'No address provided'}
-                                                </Text>
-                                            </View>
+                                        <View style={styles.actionRow}>
+                                            <TouchableOpacity style={styles.updateBtn} onPress={() => handleUpdateClick(item)}>
+                                                <Text style={styles.actionBtnText}>✏️ UPDATE PROFILE</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteClick(item)}>
+                                                <Text style={styles.actionBtnText}>🗑️ DELETE</Text>
+                                            </TouchableOpacity>
                                         </View>
                                     )}
-                                </TouchableOpacity>
+                                </View>
+                            );
+                        }}
+                        ListEmptyComponent={<Text style={styles.emptyText}>No customers found.</Text>}
+                    />
+                )}
 
-                                {/* --- EXPANDED ACTION BUTTONS --- */}
-                                {isExpanded && (
-                                    <View style={styles.actionRow}>
-                                        <TouchableOpacity style={styles.updateBtn} onPress={() => handleUpdateClick(item)}>
-                                            <Text style={styles.actionBtnText}>✏️ UPDATE PROFILE</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteClick(item)}>
-                                            <Text style={styles.actionBtnText}>🗑️ DELETE</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
+                {/* FLOATING ACTION BUTTON */}
+                <View style={styles.floatingCartWrapper}>
+                    <TouchableOpacity style={styles.floatingCartBtn} onPress={() => setAddModalVisible(true)} activeOpacity={0.9}>
+                        <View style={styles.floatingCartLeft}>
+                            <View style={styles.cartBadge}>
+                                <Text style={styles.cartBadgeText}>+</Text>
                             </View>
-                        );
-                    }}
-                    ListEmptyComponent={<Text style={styles.emptyText}>No customers found.</Text>}
-                />
-            )}
-
-            {/* FLOATING ACTION BUTTON */}
-            <View style={styles.floatingCartWrapper}>
-                <TouchableOpacity style={styles.floatingCartBtn} onPress={() => setAddModalVisible(true)} activeOpacity={0.9}>
-                    <View style={styles.floatingCartLeft}>
-                        <View style={styles.cartBadge}>
-                            <Text style={styles.cartBadgeText}>+</Text>
+                            <Text style={styles.floatingCartTitle}>New Customer</Text>
                         </View>
-                        <Text style={styles.floatingCartTitle}>New Customer</Text>
-                    </View>
-                    <Text style={styles.floatingCartTotal}>Add ➔</Text>
-                </TouchableOpacity>
+                        <Text style={styles.floatingCartTotal}>Add ➔</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <AddCustomerModal 
+                    visible={isAddModalVisible}
+                    onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
+                    onAddSuccess={fetchCustomers}
+                />
+
+                <UpdateCustomerModal 
+                    visible={isUpdateModalVisible}
+                    customer={selectedCustomer}
+                    onClose={() => setTimeout(() => setUpdateModalVisible(false), 50)}
+                    onUpdateSuccess={fetchCustomers}
+                />
             </View>
-
-            <AddCustomerModal 
-                visible={isAddModalVisible}
-                onClose={() => setTimeout(() => setAddModalVisible(false), 50)}
-                onAddSuccess={fetchCustomers}
-            />
-
-            <UpdateCustomerModal 
-                visible={isUpdateModalVisible}
-                customer={selectedCustomer}
-                onClose={() => setTimeout(() => setUpdateModalVisible(false), 50)}
-                onUpdateSuccess={fetchCustomers}
-            />
         </View>
     );
 }

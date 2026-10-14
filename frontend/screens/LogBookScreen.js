@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/LogBookScreen.styles';
 import { API_URL } from '../config/api';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
 
 export default function LogBookScreen({ navigation }) {
+    // 🚀 Detect if the user is on a desktop computer
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -30,7 +37,7 @@ export default function LogBookScreen({ navigation }) {
 
     const renderLogCard = ({ item }) => {
         const balance = item.stock_start - item.stock_used;
-        const displayUnit = item.unit ? ` ${item.unit}` : ''; // 🚀 Safely format the unit
+        const displayUnit = item.unit ? ` ${item.unit}` : ''; 
 
         return (
             <View style={styles.logCard}>
@@ -54,7 +61,7 @@ export default function LogBookScreen({ navigation }) {
                     
                     <View style={styles.statBox}>
                         <Text style={styles.statLabel}>Est. Balance</Text>
-                        <Text style={[styles.statValue, { color: '#7DBA45' }]}>{balance.toFixed(2)}{displayUnit}</Text>
+                        <Text style={[styles.statValue, { color: '#00D26A' }]}>{balance.toFixed(2)}{displayUnit}</Text>
                     </View>
                 </View>
             </View>
@@ -62,28 +69,46 @@ export default function LogBookScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Standard Navigation Header */}
-            <View style={styles.headerRow}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backArrow}>‹</Text>
-                </TouchableOpacity>
-                <Text style={styles.title}>Material Ledger</Text>
+        // 🚀 THE MAGIC LAYOUT WRAPPER
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
+            <StatusBar hidden={true} />
+            
+            {/* 🚀 THE SIDEBAR */}
+            <Sidebar navigation={navigation} currentRoute="LogBook" />
+
+            <View style={{ flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
+                <Header />
+
+                {/* 🚀 Sleek Inline Hero Banner */}
+                <View style={{
+                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
+                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
+                }}>
+                    <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
+                        Material Ledger
+                    </Text>
+                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                        Track raw material consumption and balances
+                    </Text>
+                </View>
+
+                {loading ? (
+                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                ) : (
+                    <FlatList 
+                        data={logs}
+                        keyExtractor={(item) => item.log_id.toString()}
+                        contentContainerStyle={[styles.listContent, { paddingHorizontal: 20, paddingBottom: 50 }]}
+                        renderItem={renderLogCard}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={
+                            <Text style={styles.emptyText}>No production logs recorded yet.</Text>
+                        }
+                    />
+                )}
             </View>
-            {loading ? (
-                <ActivityIndicator size="large" color="#7DBA45" style={{ marginTop: 50 }} />
-            ) : (
-                <FlatList 
-                    data={logs}
-                    keyExtractor={(item) => item.log_id.toString()}
-                    contentContainerStyle={styles.listContent}
-                    renderItem={renderLogCard}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <Text style={styles.emptyText}>No production logs recorded yet.</Text>
-                    }
-                />
-            )}
         </View>
     );
 }

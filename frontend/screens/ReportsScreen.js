@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Platform, Alert, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar'; // 🚀 Added StatusBar
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print'; 
 import { styles } from '../styles/ReportScreen.styles';
 import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown'; 
+import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
+import Header from '../components/Header'; // 🚀 IMPORT GLOBAL HEADER
 
 export default function ReportsScreen({ navigation }) {
-    // 🚀 NEW: Added FYLedger tab
+    // 🚀 Detect if the user is on a desktop computer
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
     const [activeTab, setActiveTab] = useState('Stock'); 
     
     const [stockItems, setStockItems] = useState([]);
@@ -67,7 +73,6 @@ export default function ReportsScreen({ navigation }) {
         }
     };
 
-    // 🚀 NEW: Fetch Yearly Ledger Data
     const fetchFyLedger = async () => {
         setLoading(true);
         try {
@@ -81,7 +86,6 @@ export default function ReportsScreen({ navigation }) {
         }
     };
 
-    // 🚀 NEW: Trigger the Snapshot
     const handleTakeSnapshot = async () => {
         const warningMsg = "Record closing stock for this Financial Year?\n\nThis permanently saves this year's ledger. If you make more sales and click this again before next April, it will simply update the final numbers for this current year.";
         
@@ -160,7 +164,7 @@ export default function ReportsScreen({ navigation }) {
                                 <td>${item.barcode || 'N/A'}</td>
                                 <td>${item.item_name}</td>
                                 <td class="right-align">${parseFloat(item.sale_rate || 0).toFixed(2)}</td>
-                                <td class="center-align">${item.stock} ${item.unit || ''}</td>
+                                <td class="center-align">${item.stock}${item.unit || ''}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -185,140 +189,158 @@ export default function ReportsScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerRow}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backArrow}>‹</Text>
-                </TouchableOpacity>
-                <Text style={styles.title}>Reports</Text>
-            </View>
+        // 🚀 THE MAGIC LAYOUT WRAPPER
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
+            <StatusBar hidden={true} />
+            
+            {/* 🚀 THE SIDEBAR */}
+            <Sidebar navigation={navigation} currentRoute="Reports" />
 
-            {/* TAB NAVIGATION */}
-            <View style={styles.tabContainer}>
-                <TouchableOpacity style={[styles.tab, activeTab === 'Stock' && styles.activeTab]} onPress={() => setActiveTab('Stock')}>
-                    <Text style={[styles.tabText, activeTab === 'Stock' && styles.activeTabText]}>Live Stock</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.tab, activeTab === 'Sales' && styles.activeTab]} onPress={() => setActiveTab('Sales')}>
-                    <Text style={[styles.tabText, activeTab === 'Sales' && styles.activeTabText]}>Top Sales</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.tab, activeTab === 'FYLedger' && styles.activeTab]} onPress={() => setActiveTab('FYLedger')}>
-                    <Text style={[styles.tabText, activeTab === 'FYLedger' && styles.activeTabText]}>FY Ledger</Text>
-                </TouchableOpacity>
-            </View>
+            <View style={{ flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
+                <Header />
 
-            {loading ? (
-                <ActivityIndicator size="large" color="#7DBA45" style={{ marginTop: 50 }} />
-            ) : (
-                <View style={{ flex: 1 }}>
-                    {/* ========================================= */}
-                    {/* STOCK TAB UI */}
-                    {/* ========================================= */}
-                    {activeTab === 'Stock' && (
-                        <View style={{ flex: 1, paddingHorizontal: 20 }}>
-                            <View style={{ marginBottom: 15, zIndex: 10 }}>
-                                <Text style={[styles.sectionSubtitle, { marginBottom: 5 }]}>Filter by Group:</Text>
-                                <CustomDropdown
-                                    data={itemGroups}
-                                    value={selectedGroupName}
-                                    placeholder="Select Group..."
-                                    onSelect={(item) => { setSelectedGroupId(item.id); setSelectedGroupName(item.name); }}
+                {/* 🚀 Sleek Inline Hero Banner */}
+                <View style={{
+                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
+                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
+                }}>
+                    <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
+                        Reports
+                    </Text>
+                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                        Analyze stock, sales, and financial performance
+                    </Text>
+                </View>
+
+                {/* TAB NAVIGATION */}
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity style={[styles.tab, activeTab === 'Stock' && styles.activeTab]} onPress={() => setActiveTab('Stock')}>
+                        <Text style={[styles.tabText, activeTab === 'Stock' && styles.activeTabText]}>Live Stock</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.tab, activeTab === 'Sales' && styles.activeTab]} onPress={() => setActiveTab('Sales')}>
+                        <Text style={[styles.tabText, activeTab === 'Sales' && styles.activeTabText]}>Top Sales</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.tab, activeTab === 'FYLedger' && styles.activeTab]} onPress={() => setActiveTab('FYLedger')}>
+                        <Text style={[styles.tabText, activeTab === 'FYLedger' && styles.activeTabText]}>FY Ledger</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {loading ? (
+                    <ActivityIndicator size="large" color="#00D26A" style={{ marginTop: 50 }} />
+                ) : (
+                    <View style={{ flex: 1 }}>
+                        {/* ========================================= */}
+                        {/* STOCK TAB UI */}
+                        {/* ========================================= */}
+                        {activeTab === 'Stock' && (
+                            <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                                <View style={{ marginBottom: 15, zIndex: 10 }}>
+                                    <Text style={[styles.sectionSubtitle, { marginBottom: 5 }]}>Filter by Group:</Text>
+                                    <CustomDropdown
+                                        data={itemGroups}
+                                        value={selectedGroupName}
+                                        placeholder="Select Group..."
+                                        onSelect={(item) => { setSelectedGroupId(item.id); setSelectedGroupName(item.name); }}
+                                    />
+                                </View>
+                                <View style={styles.actionRow}>
+                                    <Text style={styles.sectionSubtitle}>Total Items: {filteredStockItems.length}</Text>
+                                    <TouchableOpacity style={styles.printBtn} onPress={handlePrintStockReport}>
+                                        <Text style={styles.printBtnText}>🖨️ Print Report</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                <FlatList 
+                                    data={filteredStockItems}
+                                    keyExtractor={(item) => item.item_id.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingBottom: 50 }}
+                                    renderItem={({ item }) => (
+                                        <View style={styles.card}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+                                                <Text style={styles.itemDetail}>Barcode: {item.barcode || 'N/A'}</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                                                <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#00D26A' }]}>
+                                                    {item.stock} {item.unit || ''}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                    ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
                                 />
                             </View>
-                            <View style={styles.actionRow}>
-                                <Text style={styles.sectionSubtitle}>Total Items: {filteredStockItems.length}</Text>
-                                <TouchableOpacity style={styles.printBtn} onPress={handlePrintStockReport}>
-                                    <Text style={styles.printBtnText}>🖨️ Print Report</Text>
-                                </TouchableOpacity>
+                        )}
+
+                        {/* ========================================= */}
+                        {/* SALES TAB UI */}
+                        {/* ========================================= */}
+                        {activeTab === 'Sales' && (
+                            <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                                <Text style={[styles.sectionSubtitle, { marginBottom: 15 }]}>Highest Selling Products by Month</Text>
+                                <FlatList 
+                                    data={topSales}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingBottom: 50 }}
+                                    renderItem={({ item }) => (
+                                        <View style={styles.card}>
+                                            <View style={styles.monthBadge}>
+                                                <Text style={styles.monthText}>{item.month}</Text>
+                                            </View>
+                                            <View style={{ flex: 1, marginLeft: 15 }}>
+                                                <Text style={styles.itemName} numberOfLines={1}>{item.itemName}</Text>
+                                                <Text style={styles.itemDetail}>Units Sold: <Text style={{fontWeight: 'bold', color: '#1a1a1a'}}>{item.totalSold}</Text></Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                    ListEmptyComponent={<Text style={styles.emptyText}>No sales data available yet.</Text>}
+                                />
                             </View>
+                        )}
 
-                            <FlatList 
-                                data={filteredStockItems}
-                                keyExtractor={(item) => item.item_id.toString()}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 50 }}
-                                renderItem={({ item }) => (
-                                    <View style={styles.card}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
-                                            <Text style={styles.itemDetail}>Barcode: {item.barcode || 'N/A'}</Text>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                                            <Text style={[styles.itemStock, { color: item.stock <= 10 ? '#DE3931' : '#7DBA45' }]}>
-                                                {item.stock} {item.unit || ''}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                )}
-                                ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
-                            />
-                        </View>
-                    )}
+                        {/* ========================================= */}
+                        {/* FY LEDGER TAB UI */}
+                        {/* ========================================= */}
+                        {activeTab === 'FYLedger' && (
+                            <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                                <View style={[styles.actionRow, { justifyContent: 'flex-end', marginBottom: 15 }]}>
+                                    <TouchableOpacity style={[styles.printBtn, { backgroundColor: '#1a1a1a' }]} onPress={handleTakeSnapshot}>
+                                        <Text style={[styles.printBtnText, { color: '#ffffff' }]}>📸 Capture FY Snapshot</Text>
+                                    </TouchableOpacity>
+                                </View>
 
-                    {/* ========================================= */}
-                    {/* SALES TAB UI */}
-                    {/* ========================================= */}
-                    {activeTab === 'Sales' && (
-                        <View style={{ flex: 1, paddingHorizontal: 20 }}>
-                            <Text style={[styles.sectionSubtitle, { marginBottom: 15 }]}>Highest Selling Products by Month</Text>
-                            <FlatList 
-                                data={topSales}
-                                keyExtractor={(item, index) => index.toString()}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 50 }}
-                                renderItem={({ item }) => (
-                                    <View style={styles.card}>
-                                        <View style={styles.monthBadge}>
-                                            <Text style={styles.monthText}>{item.month}</Text>
+                                <FlatList 
+                                    data={fyLedger}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingBottom: 50 }}
+                                    renderItem={({ item }) => (
+                                        <View style={styles.card}>
+                                            <View style={styles.monthBadge}>
+                                                <Text style={[styles.monthText, {fontSize: 12}]}>{item.financial_year}</Text>
+                                            </View>
+                                            <View style={{ flex: 1, marginLeft: 15 }}>
+                                                <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+                                                <Text style={styles.itemDetail}>Captured: {new Date(item.snapshot_date).toLocaleDateString()}</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                                                <Text style={[styles.itemStock, { color: '#00D26A' }]}>
+                                                    {item.closing_stock} {item.unit || ''}
+                                                </Text>
+                                            </View>
                                         </View>
-                                        <View style={{ flex: 1, marginLeft: 15 }}>
-                                            <Text style={styles.itemName} numberOfLines={1}>{item.itemName}</Text>
-                                            <Text style={styles.itemDetail}>Units Sold: <Text style={{fontWeight: 'bold', color: '#2c2c4d'}}>{item.totalSold}</Text></Text>
-                                        </View>
-                                    </View>
-                                )}
-                                ListEmptyComponent={<Text style={styles.emptyText}>No sales data available yet.</Text>}
-                            />
-                        </View>
-                    )}
-
-                    {/* ========================================= */}
-                    {/* 🚀 NEW: FY LEDGER TAB UI */}
-                    {/* ========================================= */}
-                    {activeTab === 'FYLedger' && (
-                        <View style={{ flex: 1, paddingHorizontal: 20 }}>
-                            <View style={[styles.actionRow, { justifyContent: 'flex-end', marginBottom: 15 }]}>
-                                <TouchableOpacity style={[styles.printBtn, { backgroundColor: '#1565c0' }]} onPress={handleTakeSnapshot}>
-                                    <Text style={styles.printBtnText}>📸 Capture FY Snapshot</Text>
-                                </TouchableOpacity>
+                                    )}
+                                    ListEmptyComponent={<Text style={styles.emptyText}>No FY snapshots taken yet.</Text>}
+                                />
                             </View>
-
-                            <FlatList 
-                                data={fyLedger}
-                                keyExtractor={(item, index) => index.toString()}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 50 }}
-                                renderItem={({ item }) => (
-                                    <View style={styles.card}>
-                                        <View style={styles.monthBadge}>
-                                            <Text style={[styles.monthText, {fontSize: 12}]}>{item.financial_year}</Text>
-                                        </View>
-                                        <View style={{ flex: 1, marginLeft: 15 }}>
-                                            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
-                                            <Text style={styles.itemDetail}>Captured: {new Date(item.snapshot_date).toLocaleDateString()}</Text>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                                            <Text style={styles.itemStock}>
-                                                {item.closing_stock} {item.unit || ''}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                )}
-                                ListEmptyComponent={<Text style={styles.emptyText}>No FY snapshots taken yet.</Text>}
-                            />
-                        </View>
-                    )}
-                </View>
-            )}
+                        )}
+                    </View>
+                )}
+            </View>
         </View>
     );
 }

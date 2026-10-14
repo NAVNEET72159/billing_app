@@ -1,31 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet, Platform, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, FlatList, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar'; // 🚀 Added StatusBar
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../styles/Manufacturing.styles';
 import { API_URL } from '../config/api';
 import CustomDropdown from '../components/CustomDropdown';
+import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
+import Header from '../components/Header'; // 🚀 IMPORT GLOBAL HEADER
 
 export default function ProductionReportScreen({ navigation }) {
-    const [activeTab, setActiveTab] = useState('New'); // 'New' or 'History'
+    // 🚀 Detect if the user is on a desktop computer
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
+    const [activeTab, setActiveTab] = useState('New'); 
 
     const [rawMaterials, setRawMaterials] = useState([]);
     const [itemGroups, setItemGroups] = useState([]);
     const [loading, setLoading] = useState(false);
     
-    // Final Product Form
     const [formData, setFormData] = useState({
         barcode: '', item_name: '', item_group_id: '', item_group_name: '', 
         gst_percentage: '', mrp: '', purchase_rate: '', sale_rate: '', units_produced: '1', unit: ''
     });
 
-    // Recipe Builder States
     const [selectedRawMaterial, setSelectedRawMaterial] = useState(null);
     const [rawQtyUsed, setRawQtyUsed] = useState('');
     const [rawUnitUsed, setRawUnitUsed] = useState('');
     const [usedMaterialsList, setUsedMaterialsList] = useState([]);
 
-    // History States
     const [productionHistory, setProductionHistory] = useState([]);
     const [filterDate, setFilterDate] = useState('');
 
@@ -61,7 +65,6 @@ export default function ProductionReportScreen({ navigation }) {
         setFormData({ ...formData, barcode: newBarcode });
     };
 
-    // 🚀 NEW: Fetch Existing Recipe & Product Specs
     const fetchItemDetails = async () => {
         if (!formData.barcode) {
             Alert.alert("Missing Barcode", "Please enter a barcode to search for an existing product.");
@@ -75,8 +78,6 @@ export default function ProductionReportScreen({ navigation }) {
             });
             
             const { item, recipe } = response.data;
-            
-            // Auto-fill the group dropdown name
             const matchedGroup = itemGroups.find(g => String(g.id) === String(item.item_group_id));
 
             setFormData({
@@ -89,7 +90,7 @@ export default function ProductionReportScreen({ navigation }) {
                 purchase_rate: String(item.purchase_rate || ''),
                 sale_rate: String(item.sale_rate || ''),
                 unit: item.unit || '',
-                units_produced: '1' // Reset to 1 for the new batch
+                units_produced: '1' 
             });
 
             setUsedMaterialsList(recipe || []);
@@ -126,11 +127,7 @@ export default function ProductionReportScreen({ navigation }) {
     const handleSaveProduction = async () => {
         if (!formData.item_name || usedMaterialsList.length === 0) {
             const msg = "Please enter a Product Name and add at least one Raw Material to the recipe before saving.";
-            if (Platform.OS === 'web') {
-                window.alert(msg);
-            } else {
-                Alert.alert("Missing Information", msg);
-            }
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Missing Information", msg);
             return;
         }
 
@@ -153,12 +150,7 @@ export default function ProductionReportScreen({ navigation }) {
             });
             
             const successMsg = `Successfully recorded production run for ${formData.item_name}! Inventory and ledgers have been updated.`;
-            
-            if (Platform.OS === 'web') {
-                window.alert(successMsg);
-            } else {
-                Alert.alert("Production Saved 🎉", successMsg);
-            }
+            Platform.OS === 'web' ? window.alert(successMsg) : Alert.alert("Production Saved 🎉", successMsg);
             
             setFormData({ barcode: '', item_name: '', item_group_id: '', item_group_name: '', gst_percentage: '', mrp: '', purchase_rate: '', sale_rate: '', units_produced: '1', unit: '' });
             setUsedMaterialsList([]);
@@ -168,12 +160,7 @@ export default function ProductionReportScreen({ navigation }) {
         } catch (error) {
             console.error("Production Error:", error);
             const backendError = error.response && error.response.data ? error.response.data.error : "Failed to process production.";
-            
-            if (Platform.OS === 'web') {
-                window.alert(`Error: ${backendError}`);
-            } else {
-                Alert.alert("Error", backendError);
-            }
+            Platform.OS === 'web' ? window.alert(`Error: ${backendError}`) : Alert.alert("Error", backendError);
         } finally {
             setLoading(false);
         }
@@ -191,207 +178,235 @@ export default function ProductionReportScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerRow}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backArrow}>‹</Text>
-                </TouchableOpacity>
-                <Text style={styles.title}>Production</Text>
-            </View>
+        // 🚀 THE MAGIC LAYOUT WRAPPER
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
+            <StatusBar hidden={true} />
+            
+            {/* 🚀 THE SIDEBAR */}
+            <Sidebar navigation={navigation} currentRoute="Production" />
 
-            <View style={styles.tabContainer}>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'New' && styles.activeTab]} 
-                    onPress={() => setActiveTab('New')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'New' && styles.activeTabText]}>New Batch</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'History' && styles.activeTab]} 
-                    onPress={() => setActiveTab('History')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'History' && styles.activeTabText]}>History</Text>
-                </TouchableOpacity>
-            </View>
+            <View style={{ flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
+                <Header />
 
-            {activeTab === 'New' && (
-                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                    
-                    <Text style={styles.staticText}>
-                        <Text style={{fontWeight: 'bold'}}>Final Product Specs:</Text>
+                {/* 🚀 Sleek Inline Hero Banner */}
+                <View style={{
+                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
+                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
+                }}>
+                    <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
+                        Production
                     </Text>
+                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                        Manage manufacturing batches and history
+                    </Text>
+                </View>
 
-                    <Text style={styles.label}>Item Barcode:</Text>
-                    <TextInput style={styles.input} value={formData.barcode} onChangeText={(t) => setFormData({...formData, barcode: t})} />
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity 
+                        style={[styles.tab, activeTab === 'New' && styles.activeTab]} 
+                        onPress={() => setActiveTab('New')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'New' && styles.activeTabText]}>New Batch</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.tab, activeTab === 'History' && styles.activeTab]} 
+                        onPress={() => setActiveTab('History')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'History' && styles.activeTabText]}>History</Text>
+                    </TouchableOpacity>
+                </View>
 
-                    {/* 🚀 NEW: Side-by-side Generate & Fetch Buttons */}
-                    <View style={{flexDirection: 'row', gap: 10, marginBottom: 15}}>
-                        <TouchableOpacity style={[styles.generateBtn, {flex: 1, marginTop: 0}]} onPress={generateBarcode}>
-                            <Text style={styles.generateBtnText}>Generate New</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.generateBtn, {flex: 1, marginTop: 0, backgroundColor: '#1565c0'}]} onPress={fetchItemDetails}>
-                            <Text style={styles.generateBtnText}>Fetch Existing</Text>
-                        </TouchableOpacity>
-                    </View>
+                {activeTab === 'New' && (
+                    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                        
+                        <Text style={styles.staticText}>
+                            <Text style={{fontWeight: 'bold'}}>Final Product Specs:</Text>
+                        </Text>
 
-                    <Text style={styles.label}>Item Name (Output):</Text>
-                    <TextInput style={styles.input} placeholder="e.g. Masala Paste" value={formData.item_name} onChangeText={(t) => setFormData({...formData, item_name: t})} />
+                        <Text style={styles.label}>Item Barcode:</Text>
+                        <TextInput style={styles.input} value={formData.barcode} onChangeText={(t) => setFormData({...formData, barcode: t})} />
 
-                    <Text style={styles.label}>Item Group Name:</Text>
-                    <CustomDropdown
-                        data={itemGroups}
-                        value={formData.item_group_name}
-                        placeholder="Select Group..."
-                        onSelect={(item) => setFormData({...formData, item_group_id: item.id, item_group_name: item.name})}
-                        onCreateNew={() => Alert.alert("Note", "Use Item Group screen to add new.")}
-                    />
-
-                    <Text style={styles.label}>GST Percentage</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={formData.gst_percentage} onChangeText={(t) => setFormData({...formData, gst_percentage: t})} />
-
-                    <Text style={styles.label}>MRP (₹):</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={formData.mrp} onChangeText={(t) => setFormData({...formData, mrp: t})} />
-
-                    <Text style={styles.label}>Purchase Rate (₹):</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={formData.purchase_rate} onChangeText={(t) => setFormData({...formData, purchase_rate: t})} />
-
-                    <Text style={styles.label}>Sale Rate (₹):</Text>
-                    <TextInput style={styles.input} keyboardType="numeric" value={formData.sale_rate} onChangeText={(t) => setFormData({...formData, sale_rate: t})} />
-
-                    <Text style={styles.label}>Yield (Units Produced):</Text>
-                    <View style={styles.rowInputContainer}>
-                        <TextInput 
-                            style={[styles.input, styles.halfInput]} 
-                            keyboardType="numeric" 
-                            value={formData.units_produced} 
-                            onChangeText={(t) => setFormData({...formData, units_produced: t})} 
-                        />
-                        <View style={styles.halfDropdown}>
-                            <CustomDropdown
-                                data={['Pks', 'Pcs', 'Kg', 'g', 'm', 'cm', 'L', 'ml']}
-                                value={formData.unit}
-                                placeholder="Unit..."
-                                onSelect={(selectedItem) => setFormData({...formData, unit: selectedItem})}
-                                onCreateNew={() => {
-                                    if (typeof window !== 'undefined' && window.prompt) {
-                                        const customUnit = window.prompt("Enter a custom unit:");
-                                        if (customUnit) setFormData({...formData, unit: customUnit});
-                                    } else {
-                                        Alert.alert("New Unit", "Custom units can be added here.");
-                                    }
-                                }}
-                            />
+                        <View style={{flexDirection: 'row', gap: 10, marginBottom: 15}}>
+                            <TouchableOpacity style={[styles.generateBtn, {flex: 1, marginTop: 0}]} onPress={generateBarcode}>
+                                <Text style={styles.generateBtnText}>Generate New</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.generateBtn, {flex: 1, marginTop: 0, backgroundColor: '#1565c0'}]} onPress={fetchItemDetails}>
+                                <Text style={styles.generateBtnText}>Fetch Existing</Text>
+                            </TouchableOpacity>
                         </View>
-                    </View>
 
-                    {/* RECIPE BUILDER SECTION */}
-                    <View style={styles.recipeDivider} />
-                    <Text style={[styles.title, {fontSize: 22, marginBottom: 15}]}>Recipe / Materials Used</Text>
+                        <Text style={styles.label}>Item Name (Output):</Text>
+                        <TextInput style={styles.input} placeholder="e.g. Masala Paste" value={formData.item_name} onChangeText={(t) => setFormData({...formData, item_name: t})} />
 
-                    <View style={styles.recipeBuilderContainer}>
-                        <Text style={styles.label}>Select Raw Material</Text>
+                        <Text style={styles.label}>Item Group Name:</Text>
                         <CustomDropdown
-                            data={rawMaterials}
-                            value={selectedRawMaterial ? selectedRawMaterial.name : ''}
-                            placeholder="e.g. Cardamom, Thread..."
-                            onSelect={(item) => {
-                                setSelectedRawMaterial(item);
-                                setRawUnitUsed(item.unit || ''); 
-                            }}
-                            onCreateNew={() => Alert.alert("Note", "Add new materials in the Raw Materials screen.")}
+                            data={itemGroups}
+                            value={formData.item_group_name}
+                            placeholder="Select Group..."
+                            onSelect={(item) => setFormData({...formData, item_group_id: item.id, item_group_name: item.name})}
+                            onCreateNew={() => Alert.alert("Note", "Use Item Group screen to add new.")}
                         />
 
-                        <Text style={styles.label}>Quantity Used:</Text>
+                        <Text style={styles.label}>GST Percentage</Text>
+                        <TextInput style={styles.input} keyboardType="numeric" value={formData.gst_percentage} onChangeText={(t) => setFormData({...formData, gst_percentage: t})} />
+
+                        <Text style={styles.label}>MRP (₹):</Text>
+                        <TextInput style={styles.input} keyboardType="numeric" value={formData.mrp} onChangeText={(t) => setFormData({...formData, mrp: t})} />
+
+                        <Text style={styles.label}>Purchase Rate (₹):</Text>
+                        <TextInput style={styles.input} keyboardType="numeric" value={formData.purchase_rate} onChangeText={(t) => setFormData({...formData, purchase_rate: t})} />
+
+                        <Text style={styles.label}>Sale Rate (₹):</Text>
+                        <TextInput style={styles.input} keyboardType="numeric" value={formData.sale_rate} onChangeText={(t) => setFormData({...formData, sale_rate: t})} />
+
+                        <Text style={styles.label}>Yield (Units Produced):</Text>
                         <View style={styles.rowInputContainer}>
                             <TextInput 
                                 style={[styles.input, styles.halfInput]} 
                                 keyboardType="numeric" 
-                                placeholder="e.g. 50"
-                                value={rawQtyUsed} 
-                                onChangeText={setRawQtyUsed} 
+                                value={formData.units_produced} 
+                                onChangeText={(t) => setFormData({...formData, units_produced: t})} 
                             />
                             <View style={styles.halfDropdown}>
                                 <CustomDropdown
                                     data={['Pks', 'Pcs', 'Kg', 'g', 'm', 'cm', 'L', 'ml']}
-                                    value={rawUnitUsed}
+                                    value={formData.unit}
                                     placeholder="Unit..."
-                                    onSelect={(selectedItem) => setRawUnitUsed(selectedItem)}
+                                    onSelect={(selectedItem) => setFormData({...formData, unit: selectedItem})}
                                     onCreateNew={() => {
-                                        if (typeof window !== 'undefined' && window.prompt) {
+                                        // 🚀 FIXED: Safe cross-platform modal prompt
+                                        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.prompt) {
                                             const customUnit = window.prompt("Enter a custom unit:");
-                                            if (customUnit) setRawUnitUsed(customUnit);
+                                            if (customUnit) setFormData({...formData, unit: customUnit});
+                                        } else if (Platform.OS === 'ios') {
+                                            Alert.prompt("New Unit", "Enter a custom unit:", [
+                                                { text: "Cancel", style: "cancel" },
+                                                { text: "OK", onPress: (u) => setFormData({...formData, unit: u}) }
+                                            ]);
                                         } else {
-                                            Alert.alert("New Unit", "Custom units can be added here.");
+                                            Alert.alert("New Unit", "Custom units can currently only be added via the Web Dashboard.");
                                         }
                                     }}
                                 />
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.addMaterialBtn} onPress={handleAddMaterialToRecipe}>
-                            <Text style={styles.addMaterialBtnText}>+ Add to Recipe</Text>
-                        </TouchableOpacity>
-                    </View>
+                        {/* RECIPE BUILDER SECTION */}
+                        <View style={styles.recipeDivider} />
+                        <Text style={[styles.title, {fontSize: 22, marginBottom: 15}]}>Recipe / Materials Used</Text>
 
-                    {usedMaterialsList.length > 0 && (
-                        <View style={styles.recipeListCard}>
-                            <Text style={{fontWeight: 'bold', marginBottom: 10, color: '#333'}}>Materials in this Batch:</Text>
-                            {usedMaterialsList.map((mat, index) => (
-                                <View key={index} style={styles.recipeListItem}>
-                                    <Text style={{fontSize: 16, color: '#000'}}>• {mat.name}</Text>
-                                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                        <Text style={{fontSize: 16, fontWeight: 'bold', marginRight: 15}}>{mat.qty} {mat.unit}</Text>
-                                        <TouchableOpacity onPress={() => handleRemoveMaterial(index)}>
-                                            <Text style={{color: '#DE3931', fontWeight: 'bold', fontSize: 20}}>×</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                        <View style={styles.recipeBuilderContainer}>
+                            <Text style={styles.label}>Select Raw Material</Text>
+                            <CustomDropdown
+                                data={rawMaterials}
+                                value={selectedRawMaterial ? selectedRawMaterial.name : ''}
+                                placeholder="e.g. Cardamom, Thread..."
+                                onSelect={(item) => {
+                                    setSelectedRawMaterial(item);
+                                    setRawUnitUsed(item.unit || ''); 
+                                }}
+                                onCreateNew={() => Alert.alert("Note", "Add new materials in the Raw Materials screen.")}
+                            />
+
+                            <Text style={styles.label}>Quantity Used:</Text>
+                            <View style={styles.rowInputContainer}>
+                                <TextInput 
+                                    style={[styles.input, styles.halfInput]} 
+                                    keyboardType="numeric" 
+                                    placeholder="e.g. 50"
+                                    value={rawQtyUsed} 
+                                    onChangeText={setRawQtyUsed} 
+                                />
+                                <View style={styles.halfDropdown}>
+                                    <CustomDropdown
+                                        data={['Pks', 'Pcs', 'Kg', 'g', 'm', 'cm', 'L', 'ml']}
+                                        value={rawUnitUsed}
+                                        placeholder="Unit..."
+                                        onSelect={(selectedItem) => setRawUnitUsed(selectedItem)}
+                                        onCreateNew={() => {
+                                            // 🚀 FIXED: Safe cross-platform modal prompt
+                                            if (Platform.OS === 'web' && typeof window !== 'undefined' && window.prompt) {
+                                                const customUnit = window.prompt("Enter a custom unit:");
+                                                if (customUnit) setRawUnitUsed(customUnit);
+                                            } else if (Platform.OS === 'ios') {
+                                                Alert.prompt("New Unit", "Enter a custom unit:", [
+                                                    { text: "Cancel", style: "cancel" },
+                                                    { text: "OK", onPress: (u) => setRawUnitUsed(u) }
+                                                ]);
+                                            } else {
+                                                Alert.alert("New Unit", "Custom units can currently only be added via the Web Dashboard.");
+                                            }
+                                        }}
+                                    />
                                 </View>
-                            ))}
+                            </View>
+
+                            <TouchableOpacity style={styles.addMaterialBtn} onPress={handleAddMaterialToRecipe}>
+                                <Text style={styles.addMaterialBtnText}>+ Add to Recipe</Text>
+                            </TouchableOpacity>
                         </View>
-                    )}
 
-                    <View style={{marginTop: 30, alignItems: 'center', marginBottom: 50}}>
-                        <TouchableOpacity style={[styles.submitBtn, {width: '100%'}]} onPress={handleSaveProduction} disabled={loading}>
-                            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Save Production Run</Text>}
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            )}
-
-            {/* HISTORY TAB */}
-            {activeTab === 'History' && (
-                <View style={{ flex: 1, paddingHorizontal: 20 }}>
-                    <View style={styles.dateFilterContainer}>
-                        <Text style={styles.label}>Filter by Date:</Text>
-                        <TextInput 
-                            style={styles.input} 
-                            placeholder="YYYY-MM-DD"
-                            value={filterDate}
-                            onChangeText={setFilterDate}
-                        />
-                    </View>
-
-                    <FlatList 
-                        data={filteredHistory}
-                        keyExtractor={(item) => item.log_id.toString()}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 50 }}
-                        renderItem={({ item }) => (
-                            <View style={styles.historyCard}>
-                                <View style={styles.historyHeader}>
-                                    <Text style={styles.historyItemName}>{item.item_name}</Text>
-                                    <View style={styles.yieldBadge}>
-                                        <Text style={styles.yieldText}>Yield: {item.units_produced} {item.unit || ''}</Text>
+                        {usedMaterialsList.length > 0 && (
+                            <View style={styles.recipeListCard}>
+                                <Text style={{fontWeight: 'bold', marginBottom: 10, color: '#333'}}>Materials in this Batch:</Text>
+                                {usedMaterialsList.map((mat, index) => (
+                                    <View key={index} style={styles.recipeListItem}>
+                                        <Text style={{fontSize: 16, color: '#000'}}>• {mat.name}</Text>
+                                        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                            <Text style={{fontSize: 16, fontWeight: 'bold', marginRight: 15}}>{mat.qty} {mat.unit}</Text>
+                                            <TouchableOpacity onPress={() => handleRemoveMaterial(index)}>
+                                                <Text style={{color: '#DE3931', fontWeight: 'bold', fontSize: 20}}>×</Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                </View>
-                                <Text style={styles.historyDate}>Created: {formatDate(item.production_date)}</Text>
+                                ))}
                             </View>
                         )}
-                        ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 30, color: '#666'}}>No production records found for this date.</Text>}
-                    />
-                </View>
-            )}
 
+                        <View style={{marginTop: 30, alignItems: 'center', marginBottom: 50}}>
+                            <TouchableOpacity style={[styles.submitBtn, {width: '100%'}]} onPress={handleSaveProduction} disabled={loading}>
+                                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Save Production Run</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </ScrollView>
+                )}
+
+                {/* HISTORY TAB */}
+                {activeTab === 'History' && (
+                    <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                        <View style={styles.dateFilterContainer}>
+                            <Text style={styles.label}>Filter by Date:</Text>
+                            <TextInput 
+                                style={styles.input} 
+                                placeholder="YYYY-MM-DD"
+                                value={filterDate}
+                                onChangeText={setFilterDate}
+                            />
+                        </View>
+
+                        <FlatList 
+                            data={filteredHistory}
+                            keyExtractor={(item) => item.log_id.toString()}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 50 }}
+                            renderItem={({ item }) => (
+                                <View style={styles.historyCard}>
+                                    <View style={styles.historyHeader}>
+                                        <Text style={styles.historyItemName}>{item.item_name}</Text>
+                                        <View style={styles.yieldBadge}>
+                                            <Text style={styles.yieldText}>Yield: {item.units_produced} {item.unit || ''}</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={styles.historyDate}>Created: {formatDate(item.production_date)}</Text>
+                                </View>
+                            )}
+                            ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 30, color: '#666'}}>No production records found for this date.</Text>}
+                        />
+                    </View>
+                )}
+            </View>
         </View>
     );
 }

@@ -1,14 +1,20 @@
-// 🚀 ADDED 'createElement' to imports for the Web Date Picker
+// 🚀 ADDED 'createElement' and 'useWindowDimensions'
 import React, { useState, useEffect, createElement } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, ScrollView, TextInput, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print'; 
 import { styles } from '../styles/InvoicesScreen.styles';
 import Header from '../components/Header';
+import Sidebar from '../components/Sidebar'; // 🚀 IMPORT THE SIDEBAR
 import { API_URL } from '../config/api';
 
 export default function InvoiceScreen({ navigation }) {
+    // 🚀 Detect if the user is on a desktop computer
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isDetailModalVisible, setDetailModalVisible] = useState(false);
@@ -19,6 +25,7 @@ export default function InvoiceScreen({ navigation }) {
     const [itemToReturn, setItemToReturn] = useState(null);
     const [returnQty, setReturnQty] = useState('');
     const [returnLoading, setReturnLoading] = useState(false);
+    
     const today = new Date().toISOString().split('T')[0];
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
@@ -45,7 +52,6 @@ export default function InvoiceScreen({ navigation }) {
         }
     }
 
-    // This watches the invoices array and the date states to instantly filter the list
     const filteredInvoices = invoices.filter(inv => {
         if (!inv.sale_date) return false;
         const invDate = inv.sale_date.split('T')[0];
@@ -79,6 +85,11 @@ export default function InvoiceScreen({ navigation }) {
             setInvoices(prev => prev.filter(i => String(i.sale_id) !== String(invoice.sale_id)));
             const successMsg = `Invoice ${invoice.invoice_number} deleted and stock restored!`;
             Platform.OS !== 'web' ? Alert.alert("Success", successMsg) : window.alert(successMsg);
+            
+            // If deleting from within the modal, close the modal
+            if (isDetailModalVisible) {
+                setDetailModalVisible(false);
+            }
         } catch (error) {
             console.error("Invoice Delete Error:", error);
             const errMsg = "Could not delete invoice.";
@@ -98,9 +109,6 @@ export default function InvoiceScreen({ navigation }) {
         }
     };
 
-    // ==========================================
-    // 🖨️ PRINT SUMMARY LOGIC (UPDATED FOR RANGE)
-    // ==========================================
     const handlePrintDailySummary = async () => {
         if (!startDate || !endDate) return Alert.alert("Missing Date", "Please enter a valid start and end date.");
         
@@ -129,7 +137,7 @@ export default function InvoiceScreen({ navigation }) {
                 <div class="header">
                     <h1>PYSSUM</h1>
                     <h3>Sales Summary</h3>
-                    <p>${startDate === endDate ? `Date: ${startDate}` : `From: ${startDate} To: ${endDate}`}</p>
+                    <p>${startDate === endDate ? `Date: ${startDate}` : `From: ${startDate} To:${endDate}`}</p>
                 </div>
                 <table>
                     <thead>
@@ -161,7 +169,6 @@ export default function InvoiceScreen({ navigation }) {
         try {
             if (Platform.OS === 'web') {
                 const printWindow = window.open('', '_blank');
-                // 🚀 FIXED: Using document.write
                 printWindow.document.write(htmlContent);
                 printWindow.document.close();
                 printWindow.focus();
@@ -179,9 +186,6 @@ export default function InvoiceScreen({ navigation }) {
         }
     };
 
-    // ==========================================
-    // 🗜️ DOWNLOAD ZIP LOGIC (UPDATED FOR RANGE)
-    // ==========================================
     const handleDownloadZip = async () => {
         if (!startDate || !endDate) return Alert.alert("Missing Date", "Please enter valid dates.");
         setDownloadingZip(true);
@@ -222,24 +226,15 @@ export default function InvoiceScreen({ navigation }) {
                 <style>
                     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 30px; color: #000; max-width: 800px; margin: auto; }
                     .top-container { display: flex; justify-content: space-between; margin-bottom: 20px; }
-                    
-                    /* Left Column Styling */
                     .left-header h1 { font-size: 34px; font-weight: 900; margin: 0; font-family: Georgia, serif; }
                     .left-header p { font-size: 16px; margin: 5px 0; }
                     .dates-section { margin-top: 45px; }
-                    
-                    /* Right Column Styling */
                     .right-header { text-align: left; width: 350px; }
-                    
-                    /* 🚀 LOGO STYLING */
                     .logo img { max-width: 180px; height: auto; margin-bottom: -5px; margin-left: -5px; display: block; }
-                    
                     .logo-text { font-size: 42px; font-weight: 900; margin: 0; letter-spacing: 3px; font-family: Arial, sans-serif; }
-                    .logo-text span { color: #2c2c4d; } /* Updated to match reference color */
+                    .logo-text span { color: #2c2c4d; } 
                     .company-address { font-size: 13px; line-height: 1.5; margin-top: 5px; color: #000; }
                     .customer-info { font-size: 15px; margin-top: 25px; line-height: 1.6; }
-                    
-                    /* Table Styling */
                     table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; font-size: 15px; }
                     thead { background-color: #000; color: #fff; }
                     th { padding: 12px 15px; text-align: left; border: none; }
@@ -249,8 +244,6 @@ export default function InvoiceScreen({ navigation }) {
                     td:last-child { text-align: right; font-weight: bold; }
                     .item-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #000; }
                     .item-qty { color: #000; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
-                    
-                    /* Footer Styling */
                     .footer-section { display: flex; justify-content: space-between; margin-top: 40px; align-items: flex-end; }
                     .signature { font-size: 16px; font-weight: bold; }
                     .total-cost { font-size: 20px; font-weight: bold; color: #000; }
@@ -268,7 +261,6 @@ export default function InvoiceScreen({ navigation }) {
                     </div>
                     <div class="right-header">
                         <div class="logo">
-                            <!-- 🚀 INSERT YOUR LOGO URL OR BASE64 STRING HERE -->
                             <img src="../assets/images/logo.png" alt="PYSSUM Logo" />
                         </div>
                         <div class="logo-text"><span>P</span><span>Y</span><span>S</span><span>S</span><span>U</span><span>M</span></div>
@@ -324,15 +316,10 @@ export default function InvoiceScreen({ navigation }) {
         try {
             if (Platform.OS === 'web') {
                 const printWindow = window.open('', '_blank', 'width=800,height=600');
-                // 🚀 FIXED: Using document.write
                 printWindow.document.write(htmlContent);
                 printWindow.document.close();
                 printWindow.focus();
-                
-                setTimeout(() => { 
-                    printWindow.print(); 
-                    printWindow.close(); 
-                }, 750); // 750ms gives the logo image enough time to load
+                setTimeout(() => { printWindow.print(); printWindow.close(); }, 750);
             } else {
                 await Print.printAsync({ html: htmlContent });
             }
@@ -341,6 +328,7 @@ export default function InvoiceScreen({ navigation }) {
             Alert.alert("Error", "Could not print the invoice.");
         }
     };
+
     const openReturnModal = (item) => {
         setItemToReturn(item);
         setReturnQty(String(item.quantity)); 
@@ -362,7 +350,9 @@ export default function InvoiceScreen({ navigation }) {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             Alert.alert("Success", "Item returned and inventory restocked!");
-            setReturnModalVisible(false);
+            
+            // 🚀 FIXED: Added Timeout
+            setTimeout(() => setReturnModalVisible(false), 50);
             handleViewDetails(selectedInvoice);
             fetchInvoices();
         } catch (error) {
@@ -381,198 +371,233 @@ export default function InvoiceScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerWrapper}>
-                <Header />
-            </View>
+        // 🚀 THE MAGIC LAYOUT WRAPPER
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#f4f7f6' }}>
+            <StatusBar hidden={true} />
             
-            <Text style={styles.pageTitle}>Billing History</Text>
+            {/* 🚀 THE SIDEBAR */}
+            <Sidebar navigation={navigation} currentRoute="Invoice" />
 
-            {/* 🚀 NEW: DATE RANGE PANEL WITH NATIVE CALENDARS */}
-            <View style={styles.reportPanel}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <Text style={styles.panelLabel}>Filter by Date Range:</Text>
-                    <Text style={{ fontSize: 12, color: '#666', fontWeight: 'bold' }}>
-                        Showing {filteredInvoices.length} Invoices
+            <View style={{ flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
+                {/* 🚀 WEB-ONLY HOVER ANIMATIONS */}
+                {Platform.OS === 'web' && (
+                    <style type="text/css">{`
+                        .hover-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+                        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0, 210, 106, 0.15) !important; border-color: #00D26A !important; }
+                    `}</style>
+                )}
+
+                <Header />
+                
+                {/* 🚀 Sleek Inline Hero Banner */}
+                <View style={{
+                    backgroundColor: '#00D26A', padding: 20, paddingTop: Platform.OS === 'web' ? 30 : 50,
+                    paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
+                    marginBottom: 15, shadowColor: '#00D26A', shadowOffset: { width: 0, height: 10 },
+                    shadowOpacity: 0.2, shadowRadius: 15, elevation: 10,
+                }}>
+                    <Text style={{ fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 }}>
+                        Billing History
+                    </Text>
+                    <Text style={{ fontSize: 15, color: '#e8f5e9', fontWeight: '500', marginTop: 5 }}>
+                        Manage, reprint, and review past invoices
                     </Text>
                 </View>
-                
-                <View style={styles.dateRow}>
-                    <Text style={styles.dateLabel}>From:</Text>
-                    {Platform.OS === 'web' ? (
-                        createElement('input', {
-                            type: 'date',
-                            value: startDate,
-                            onChange: (e) => setStartDate(e.target.value),
-                            style: { flex: 1, padding: 8, borderRadius: 5, border: '1px solid #ccc', marginHorizontal: 5 }
-                        })
-                    ) : (
-                        <TextInput 
-                            style={styles.dateInput} 
-                            placeholder="YYYY-MM-DD" 
-                            value={startDate} 
-                            onChangeText={setStartDate} 
-                        />
-                    )}
 
-                    <Text style={styles.dateLabel}>To:</Text>
-                    {Platform.OS === 'web' ? (
-                        createElement('input', {
-                            type: 'date',
-                            value: endDate,
-                            onChange: (e) => setEndDate(e.target.value),
-                            style: { flex: 1, padding: 8, borderRadius: 5, border: '1px solid #ccc', marginHorizontal: 5 }
-                        })
-                    ) : (
-                        <TextInput 
-                            style={styles.dateInput} 
-                            placeholder="YYYY-MM-DD" 
-                            value={endDate} 
-                            onChangeText={setEndDate} 
-                        />
-                    )}
-                </View>
+                {/* DATE RANGE PANEL */}
+                <View style={styles.reportPanel}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <Text style={styles.panelLabel}>Filter by Date Range:</Text>
+                        <Text style={{ fontSize: 12, color: '#666', fontWeight: 'bold' }}>
+                            Showing {filteredInvoices.length} Invoices
+                        </Text>
+                    </View>
+                    
+                    <View style={styles.dateRow}>
+                        <Text style={styles.dateLabel}>From:</Text>
+                        {Platform.OS === 'web' ? (
+                            createElement('input', {
+                                type: 'date',
+                                value: startDate,
+                                onChange: (e) => setStartDate(e.target.value),
+                                style: { flex: 1, padding: 8, borderRadius: 5, border: '1px solid #ccc', marginHorizontal: 5 }
+                            })
+                        ) : (
+                            <TextInput 
+                                style={styles.dateInput} 
+                                placeholder="YYYY-MM-DD" 
+                                value={startDate} 
+                                onChangeText={setStartDate} 
+                            />
+                        )}
 
-                <View style={styles.reportControls}>
-                    <TouchableOpacity style={[styles.actionBtn, { flex: 1 }]} onPress={handlePrintDailySummary}>
-                        <Text style={styles.actionBtnText}>Print Summary</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#2c2c4d', flex: 1 }]} onPress={handleDownloadZip} disabled={downloadingZip}>
-                        {downloadingZip ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.actionBtnText}>Download ZIP</Text>}
-                    </TouchableOpacity>
-                </View>
-            </View>
+                        <Text style={styles.dateLabel}>To:</Text>
+                        {Platform.OS === 'web' ? (
+                            createElement('input', {
+                                type: 'date',
+                                value: endDate,
+                                onChange: (e) => setEndDate(e.target.value),
+                                style: { flex: 1, padding: 8, borderRadius: 5, border: '1px solid #ccc', marginHorizontal: 5 }
+                            })
+                        ) : (
+                            <TextInput 
+                                style={styles.dateInput} 
+                                placeholder="YYYY-MM-DD" 
+                                value={endDate} 
+                                onChangeText={setEndDate} 
+                            />
+                        )}
+                    </View>
 
-            {loading ? (
-                <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
-            ) : (
-                <FlatList 
-                    data={filteredInvoices} // 🚀 FIXED: Now feeds the filtered array instead of raw invoices
-                    keyExtractor={(item, index) => item.sale_id ? item.sale_id.toString() : index.toString()}
-                    contentContainerStyle={styles.listContainer} 
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => handleViewDetails(item)}>
-                            <View style={styles.cardHeader}>
-                                <Text style={styles.invoiceNumber}>{item.invoice_number}</Text>
-                                <Text style={styles.grandTotal}>₹{item.grand_total}</Text>
-                            </View>
-
-                            <Text style={styles.detailText}>
-                                <Text style={styles.boldLabel}>Date: {formatDate(item.sale_date)} </Text>
-                            </Text>
-                            <Text style={styles.detailText}>
-                                <Text style={styles.boldLabel}>Customer: </Text>{item.customer_name || "Walk-in Customer"}
-                            </Text>
-                            <Text style={styles.detailText}>
-                                <Text style={styles.boldLabel}>Payment: </Text>{item.payment_method || "CASH"}
-                            </Text>
-
-                            <View style={styles.actionRow}>
-                                <TouchableOpacity 
-                                    style={styles.deleteBtn} 
-                                    onPress={(e) => { e.stopPropagation(); handleDeleteInvoice(item);}}
-                                >
-                                    <Text style={styles.actionBtnText}>DELETE INVOICE & RESTOCK ALL</Text>
-                                </TouchableOpacity>
-                            </View>
+                    <View style={styles.reportControls}>
+                        <TouchableOpacity style={[styles.actionBtn, { flex: 1 }]} onPress={handlePrintDailySummary}>
+                            <Text style={styles.actionBtnText}>Print Summary</Text>
                         </TouchableOpacity>
-                    )}
-                    ListEmptyComponent={<Text style={styles.emptyText}>No invoices found in this date range.</Text>}
-                />
-            )}
-
-            {/* RECEIPT DETAILS MODAL */}
-            <Modal visible={isDetailModalVisible} animationType="slide" transparent={false}>
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Receipt Details</Text>
-                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 15}}>
-                            <TouchableOpacity onPress={handleReprint} style={styles.printBtn}>
-                                <Text style={styles.printBtnText}>🖨️ Print</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={{paddingVertical: 6}}>
-                                <Text style={styles.closeBtnText}>Close</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#2c2c4d', flex: 1 }]} onPress={handleDownloadZip} disabled={downloadingZip}>
+                            {downloadingZip ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.actionBtnText}>Download ZIP</Text>}
+                        </TouchableOpacity>
                     </View>
+                </View>
 
-                    {selectedInvoice && (
-                        <View style={styles.receiptInfoPanel}>
-                            <Text style={styles.receiptText}><Text style={styles.boldLabel}>Invoice: </Text>{selectedInvoice.invoice_number}</Text>
-                            <Text style={styles.receiptText}><Text style={styles.boldLabel}>Date: </Text>{formatDate(selectedInvoice.sale_date)}</Text>
-                            <Text style={styles.receiptText}><Text style={styles.boldLabel}>Payment: </Text>{selectedInvoice.payment_method || "CASH"}</Text>
-                            <Text style={[styles.receiptText, { marginTop: 10, fontSize: 18, color: '#7cb342', fontWeight: 'bold' }]}>
-                                Grand Total: ₹{invoiceItems.reduce((sum, i) => sum + parseFloat(i.amount), 0).toFixed(2)}
-                            </Text>
-                        </View>
-                    )}
+                {loading ? (
+                    <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
+                ) : (
+                    <FlatList 
+                        data={filteredInvoices}
+                        keyExtractor={(item, index) => item.sale_id ? item.sale_id.toString() : index.toString()}
+                        contentContainerStyle={[styles.listContainer, { paddingBottom: 50 }]} 
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity 
+                                style={styles.card} 
+                                activeOpacity={0.7} 
+                                onPress={() => handleViewDetails(item)}
+                                className="hover-card"
+                            >
+                                <View style={styles.cardHeader}>
+                                    <Text style={styles.invoiceNumber}>{item.invoice_number}</Text>
+                                    <Text style={styles.grandTotal}>₹{item.grand_total}</Text>
+                                </View>
 
-                    <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderText, {flex: 2}]}>Item</Text>
-                        <Text style={[styles.tableHeaderText, {flex: 0.8, textAlign: 'center'}]}>Qty</Text>
-                        <Text style={[styles.tableHeaderText, {flex: 1, textAlign: 'center'}]}>Total</Text>
-                        <Text style={[styles.tableHeaderText, {flex: 1, textAlign: 'right'}]}>Action</Text>
-                    </View>
+                                <Text style={styles.detailText}>
+                                    <Text style={styles.boldLabel}>Date: </Text>{formatDate(item.sale_date)}
+                                </Text>
+                                <Text style={styles.detailText}>
+                                    <Text style={styles.boldLabel}>Customer: </Text>{item.customer_name || "Walk-in Customer"}
+                                </Text>
+                                <Text style={styles.detailText}>
+                                    <Text style={styles.boldLabel}>Payment: </Text>{item.payment_method || "CASH"}
+                                </Text>
 
-                    {loadingDetails ? (
-                        <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
-                    ) : (
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {invoiceItems.map((item, index) => (
-                                <View key={index} style={styles.itemRow}>
-                                    <Text style={[styles.itemText, {flex: 2}]} numberOfLines={2}>
-                                        {item.item_name || "Archived Item"}
-                                    </Text>
-                                    <Text style={[styles.itemText, {flex: 0.8, textAlign: 'center'}]}>{item.quantity}</Text>
-                                    <Text style={[styles.itemText, {flex: 1, textAlign: 'center'}]}>₹{item.amount}</Text>
-                                    
+                                <View style={styles.actionRow}>
                                     <TouchableOpacity 
-                                        style={styles.returnItemBtn} 
-                                        onPress={() => openReturnModal(item)}
+                                        style={styles.deleteBtn} 
+                                        // 🚀 FIXED: Removed e.stopPropagation() to prevent mobile crash
+                                        onPress={() => handleDeleteInvoice(item)}
                                     >
-                                        <Text style={styles.returnItemText}>Return</Text>
+                                        <Text style={styles.actionBtnText}>DELETE INVOICE & RESTOCK ALL</Text>
                                     </TouchableOpacity>
                                 </View>
-                            ))}
-                            {invoiceItems.length === 0 && !loadingDetails && (
-                                <Text style={[styles.emptyText, {marginTop: 20}]}>All items have been returned.</Text>
-                            )}
-                        </ScrollView>
-                    )}
-                </View>
+                            </TouchableOpacity>
+                        )}
+                        ListEmptyComponent={<Text style={styles.emptyText}>No invoices found in this date range.</Text>}
+                    />
+                )}
 
-                {/* RETURN SPECIFIC ITEM MODAL */}
-                <Modal visible={isReturnModalVisible} animationType="fade" transparent={true}>
-                    <View style={styles.returnOverlay}>
-                        <View style={styles.returnContainer}>
-                            <Text style={styles.returnTitle}>Return Item</Text>
-                            {itemToReturn && (
-                                <Text style={styles.returnSub}>
-                                    How many <Text style={{fontWeight: 'bold'}}>{itemToReturn.item_name}</Text> are being returned? (Max: {itemToReturn.quantity})
-                                </Text>
-                            )}
-
-                            <TextInput 
-                                style={styles.returnInput}
-                                keyboardType="numeric"
-                                value={returnQty}
-                                onChangeText={setReturnQty}
-                                selectTextOnFocus={true}
-                            />
-
-                            <View style={styles.returnBtnRow}>
-                                <TouchableOpacity style={styles.returnCancelBtn} onPress={() => setReturnModalVisible(false)}>
-                                    <Text style={styles.returnBtnText}>Cancel</Text>
+                {/* RECEIPT DETAILS MODAL */}
+                <Modal visible={isDetailModalVisible} animationType="slide" transparent={false}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Receipt Details</Text>
+                            <View style={{flexDirection: 'row', alignItems: 'center', gap: 15}}>
+                                <TouchableOpacity onPress={handleReprint} style={styles.printBtn}>
+                                    <Text style={styles.printBtnText}>🖨️ Print</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.returnConfirmBtn} onPress={submitReturn} disabled={returnLoading}>
-                                    {returnLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.returnBtnText}>Confirm Return</Text>}
+                                {/* 🚀 FIXED: Added setTimeout to prevent Web aria-hidden crash */}
+                                <TouchableOpacity onPress={() => setTimeout(() => setDetailModalVisible(false), 50)} style={{paddingVertical: 6}}>
+                                    <Text style={styles.closeBtnText}>Close</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
+
+                        {selectedInvoice && (
+                            <View style={styles.receiptInfoPanel}>
+                                <Text style={styles.receiptText}><Text style={styles.boldLabel}>Invoice: </Text>{selectedInvoice.invoice_number}</Text>
+                                <Text style={styles.receiptText}><Text style={styles.boldLabel}>Date: </Text>{formatDate(selectedInvoice.sale_date)}</Text>
+                                <Text style={styles.receiptText}><Text style={styles.boldLabel}>Payment: </Text>{selectedInvoice.payment_method || "CASH"}</Text>
+                                <Text style={[styles.receiptText, { marginTop: 10, fontSize: 18, color: '#7cb342', fontWeight: 'bold' }]}>
+                                    Grand Total: ₹{invoiceItems.reduce((sum, i) => sum + parseFloat(i.amount), 0).toFixed(2)}
+                                </Text>
+                            </View>
+                        )}
+
+                        <View style={styles.tableHeader}>
+                            <Text style={[styles.tableHeaderText, {flex: 2}]}>Item</Text>
+                            <Text style={[styles.tableHeaderText, {flex: 0.8, textAlign: 'center'}]}>Qty</Text>
+                            <Text style={[styles.tableHeaderText, {flex: 1, textAlign: 'center'}]}>Total</Text>
+                            <Text style={[styles.tableHeaderText, {flex: 1, textAlign: 'right'}]}>Action</Text>
+                        </View>
+
+                        {loadingDetails ? (
+                            <ActivityIndicator size="large" color="#2c2c4d" style={{ marginTop: 50 }} />
+                        ) : (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                {invoiceItems.map((item, index) => (
+                                    <View key={index} style={styles.itemRow}>
+                                        <Text style={[styles.itemText, {flex: 2}]} numberOfLines={2}>
+                                            {item.item_name || "Archived Item"}
+                                        </Text>
+                                        <Text style={[styles.itemText, {flex: 0.8, textAlign: 'center'}]}>{item.quantity}</Text>
+                                        <Text style={[styles.itemText, {flex: 1, textAlign: 'center'}]}>₹{item.amount}</Text>
+                                        
+                                        <TouchableOpacity 
+                                            style={styles.returnItemBtn} 
+                                            onPress={() => openReturnModal(item)}
+                                        >
+                                            <Text style={styles.returnItemText}>Return</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                                {invoiceItems.length === 0 && !loadingDetails && (
+                                    <Text style={[styles.emptyText, {marginTop: 20}]}>All items have been returned.</Text>
+                                )}
+                            </ScrollView>
+                        )}
                     </View>
+
+                    {/* RETURN SPECIFIC ITEM MODAL */}
+                    <Modal visible={isReturnModalVisible} animationType="fade" transparent={true}>
+                        <View style={styles.returnOverlay}>
+                            <View style={styles.returnContainer}>
+                                <Text style={styles.returnTitle}>Return Item</Text>
+                                {itemToReturn && (
+                                    <Text style={styles.returnSub}>
+                                        How many <Text style={{fontWeight: 'bold'}}>{itemToReturn.item_name}</Text> are being returned? (Max: {itemToReturn.quantity})
+                                    </Text>
+                                )}
+
+                                <TextInput 
+                                    style={styles.returnInput}
+                                    keyboardType="numeric"
+                                    value={returnQty}
+                                    onChangeText={setReturnQty}
+                                    selectTextOnFocus={true}
+                                />
+
+                                <View style={styles.returnBtnRow}>
+                                    {/* 🚀 FIXED: Added setTimeout to prevent Web aria-hidden crash */}
+                                    <TouchableOpacity style={styles.returnCancelBtn} onPress={() => setTimeout(() => setReturnModalVisible(false), 50)}>
+                                        <Text style={styles.returnBtnText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.returnConfirmBtn} onPress={submitReturn} disabled={returnLoading}>
+                                        {returnLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.returnBtnText}>Confirm Return</Text>}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
                 </Modal>
-            </Modal>
+            </View>
         </View>
     );
 }
