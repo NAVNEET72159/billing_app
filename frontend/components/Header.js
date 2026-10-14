@@ -1,14 +1,21 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, DeviceEventEmitter } from 'react-native';
 import styles from '../styles/Header.styles';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-const noBackButtonScreens = ['Login', 'Dashboard'];
+// 🚀 Prevent the back arrow from showing on our primary root screens
+const noBackButtonScreens = ['Login', 'Reports', 'Dashboard'];
 
-export default function Header({ rightIcon, onIconPress }) {
+export default function Header() {
     const navigation = useNavigation();
     const route = useRoute();
     const shouldShowBack = navigation.canGoBack() && !noBackButtonScreens.includes(route.name);
+
+    // 🚀 NEW: This function talks directly to App.js to handle the secure logout globally
+    const handleLogoutClick = () => {
+        DeviceEventEmitter.emit('triggerGlobalLogout', 'You have securely logged out.');
+    };
+
     return (
         <View style={styles.header}>
             <View style={ styles.logocontainer }>
@@ -36,13 +43,10 @@ export default function Header({ rightIcon, onIconPress }) {
                 <Text style={styles.posText}>POS</Text>
             </View>
 
-            {onIconPress ? (
-            <TouchableOpacity onPress={onIconPress}>
+            {/* 🚀 NEW: The Logout button is now permanently attached to every header */}
+            <TouchableOpacity onPress={handleLogoutClick}>
                 <Image source={require('../assets/images/logout.png')} style={styles.logout} />
             </TouchableOpacity>
-            ) : (
-                <View style={styles.rightIcon} />
-            )}
         </View>
     );
 }
