@@ -20,21 +20,17 @@ export default function StaffScreen({ navigation }) {
     const [expandedStaffId, setExpandedStaffId] = useState(null);
     const [currentUserRole, setCurrentUserRole] = useState(null);
     const [isAddModalVisible, setAddModalVisible] = useState(false);
-    
-    // 🚀 NEW: State to track global theme
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
         fetchStaff();
         
-        // 🚀 NEW: Load initial theme preference
         const loadTheme = async () => {
             const savedTheme = await AsyncStorage.getItem('appTheme');
             if (savedTheme === 'dark') setIsDarkMode(true);
         };
         loadTheme();
 
-        // 🚀 NEW: Listen for theme changes from the Sidebar
         const themeListener = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
             setIsDarkMode(newTheme === 'dark');
         });
@@ -71,20 +67,13 @@ export default function StaffScreen({ navigation }) {
         const isCurrentlySuspended = user.account_status === 'SUSPENDED';
         const actionWord = isCurrentlySuspended ? 'reactivate' : 'suspend';
         const newStatus = isCurrentlySuspended ? 'ACTIVE' : 'SUSPENDED';
-
         const warningMsg = `Are you sure you want to ${actionWord} ${user.username}'s account?`;
         
         const executeToggle = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
-                await axios.put(`${API_URL}/staff/${user.user_id}/suspend`, 
-                    { newStatus: newStatus },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                
-                setStaff(prev => prev.map(s => 
-                    s.user_id === user.user_id ? { ...s, account_status: newStatus } : s
-                ));
+                await axios.put(`${API_URL}/staff/${user.user_id}/suspend`, { newStatus: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+                setStaff(prev => prev.map(s => s.user_id === user.user_id ? { ...s, account_status: newStatus } : s));
             } catch (error) {
                 console.error("Toggle Error:", error);
                 const msg = "Could not update account status.";
@@ -95,10 +84,7 @@ export default function StaffScreen({ navigation }) {
         if (Platform.OS === 'web') {
             if (window.confirm(warningMsg)) executeToggle();
         } else {
-            Alert.alert("Confirm Action", warningMsg, [
-                { text: "Cancel", style: "cancel" },
-                { text: "Confirm", style: isCurrentlySuspended ? "default" : "destructive", onPress: executeToggle }
-            ]);
+            Alert.alert("Confirm Action", warningMsg, [ { text: "Cancel", style: "cancel" }, { text: "Confirm", style: isCurrentlySuspended ? "default" : "destructive", onPress: executeToggle } ]);
         }
     };
 
@@ -112,20 +98,13 @@ export default function StaffScreen({ navigation }) {
         const isCurrentlyManager = user.role === 'MANAGER';
         const newRole = isCurrentlyManager ? 'SALESPERSON' : 'MANAGER';
         const actionWord = isCurrentlyManager ? 'demote' : 'promote';
-
         const warningMsg = `Are you sure you want to ${actionWord} ${user.username} to a ${newRole}?`;
 
         const executeUpdate = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
-                await axios.put(`${API_URL}/staff/${user.user_id}/role`, 
-                    { newRole: newRole },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                
-                setStaff(prev => prev.map(s => 
-                    s.user_id === user.user_id ? { ...s, role: newRole } : s
-                ));
+                await axios.put(`${API_URL}/staff/${user.user_id}/role`, { newRole: newRole }, { headers: { Authorization: `Bearer ${token}` } });
+                setStaff(prev => prev.map(s => s.user_id === user.user_id ? { ...s, role: newRole } : s));
             } catch (error) {
                 console.error("Role Update Error:", error);
                 const msg = "Could not update role.";
@@ -136,10 +115,7 @@ export default function StaffScreen({ navigation }) {
         if (Platform.OS === 'web') {
             if (window.confirm(warningMsg)) executeUpdate();
         } else {
-            Alert.alert("Confirm Role Change", warningMsg, [
-                { text: "Cancel", style: "cancel" },
-                { text: "Confirm", onPress: executeUpdate }
-            ]);
+            Alert.alert("Confirm Role Change", warningMsg, [ { text: "Cancel", style: "cancel" }, { text: "Confirm", onPress: executeUpdate } ]);
         }
     };
 
@@ -155,9 +131,18 @@ export default function StaffScreen({ navigation }) {
         return name.substring(0, 2).toUpperCase();
     };
 
+    // 🚀 NEW: The dynamic theme object that controls all inner UI components!
+    const theme = {
+        background: isDarkMode ? '#121212' : '#f4f7f6',
+        cardBg: isDarkMode ? '#1e1e1e' : '#ffffff',
+        textColor: isDarkMode ? '#ffffff' : '#1a1a1a',
+        subText: isDarkMode ? '#aaaaaa' : '#444444',
+        borderColor: isDarkMode ? '#333333' : '#f0f0f0',
+        actionBg: isDarkMode ? '#2c2c2c' : '#fafafa',
+    };
+
     return (
-        // 🚀 FIXED: The main background color now responds to the Dark Mode toggle!
-        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: isDarkMode ? '#1e1e1e' : '#f4f7f6' }}>
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: theme.background }}>
             <StatusBar hidden={true} />
             <Sidebar navigation={navigation} currentRoute="Staff" />
 
@@ -188,7 +173,7 @@ export default function StaffScreen({ navigation }) {
                                 placeholder="Search username..." 
                                 value={searchText}
                                 onChangeText={setSearchText}
-                                containerStyle={styles.searchContainer} 
+                                containerStyle={[styles.searchContainer, { backgroundColor: theme.cardBg, borderColor: theme.borderColor, borderWidth: isDarkMode ? 1 : 0 }]} 
                             />
                         </View>
                     </View>
@@ -208,8 +193,9 @@ export default function StaffScreen({ navigation }) {
 
                             return (
                                 <View style={{ marginBottom: 15 }}>
+                                    {/* 🚀 FIXED: Injected dynamic card background and border colors */}
                                     <TouchableOpacity 
-                                        style={[styles.card, { padding: 20 }, isExpanded && styles.cardExpanded]} 
+                                        style={[styles.card, { padding: 20, backgroundColor: theme.cardBg, borderColor: theme.borderColor }, isExpanded && styles.cardExpanded]} 
                                         activeOpacity={0.9}
                                         onPress={() => toggleExpand(item.user_id)}
                                         className="hover-card"
@@ -222,16 +208,14 @@ export default function StaffScreen({ navigation }) {
                                                 marginRight: 15, borderWidth: 1, 
                                                 borderColor: item.role === 'MANAGER' ? '#bbdefb' : '#ffe0b2' 
                                             }}>
-                                                <Text style={{ 
-                                                    color: item.role === 'MANAGER' ? '#1976d2' : '#f57c00', 
-                                                    fontSize: 18, fontWeight: '900', letterSpacing: 1 
-                                                }}>
+                                                <Text style={{ color: item.role === 'MANAGER' ? '#1976d2' : '#f57c00', fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>
                                                     {getInitials(item.username)}
                                                 </Text>
                                             </View>
                                             
                                             <View style={{ flex: 1 }}>
-                                                <Text style={{ fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }} numberOfLines={1}>
+                                                {/* 🚀 FIXED: Injected dynamic text color */}
+                                                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.textColor, marginBottom: 4 }} numberOfLines={1}>
                                                     {item.username}
                                                 </Text>
                                                 {Platform.OS === 'web' ? (
@@ -253,12 +237,13 @@ export default function StaffScreen({ navigation }) {
                                         </View>
                                         
                                         {isExpanded && (
-                                            <View style={{ paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+                                            <View style={{ paddingTop: 15, borderTopWidth: 1, borderTopColor: theme.borderColor }}>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                     <Text style={{ width: 28, fontSize: 16, textAlign: 'center' }}>
                                                         {item.account_status === 'ACTIVE' ? '🟢' : '🔴'}
                                                     </Text>
-                                                    <Text style={{ fontSize: 15, color: '#444', flex: 1, fontWeight: '500' }}>
+                                                    {/* 🚀 FIXED: Injected dynamic text color */}
+                                                    <Text style={{ fontSize: 15, color: theme.textColor, flex: 1, fontWeight: '500' }}>
                                                         Status: {item.account_status}
                                                     </Text>
                                                 </View>
@@ -266,13 +251,14 @@ export default function StaffScreen({ navigation }) {
                                         )}
                                     </TouchableOpacity>
 
+                                    {/* 🚀 FIXED: Injected dynamic action-row background and borders */}
                                     {isExpanded && (
-                                        <View style={styles.actionRow}>
+                                        <View style={[styles.actionRow, { backgroundColor: theme.actionBg, borderTopColor: theme.borderColor }]}>
                                             <TouchableOpacity 
-                                                style={styles.updateBtn} 
+                                                style={[styles.updateBtn, { borderRightColor: theme.borderColor }]} 
                                                 onPress={() => handleRoleUpdate(item)}
                                             >
-                                                <Text style={styles.actionBtnText}>
+                                                <Text style={[styles.actionBtnText, { color: theme.textColor }]}>
                                                     {item.role === 'MANAGER' ? '📉 DEMOTE ROLE' : '📈 PROMOTE ROLE'}
                                                 </Text>
                                             </TouchableOpacity>
